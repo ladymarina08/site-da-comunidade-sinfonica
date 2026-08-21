@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Comunidade Sinfônica</title>
+  <meta name="description" content="Entre na Comunidade Sinfônica: agenda de shows, bandas e muito mais." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230a0505' stroke='%23d4af37' stroke-width='3'/%3E%3Ctext x='32' y='43' font-size='30' text-anchor='middle' fill='%23d4af37'%3E%E2%99%AA%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="brand">
+        <span class="brand-symbol">✦</span>
+        <h1 class="brand-title">Comunidade Sinfônica</h1>
+        <p class="brand-subtitle">Onde o metal encontra a orquestra</p>
+      </div>
+
+      <!-- Login conectado ao backend em backend/app.py (rota /api/login) -->
+      <form class="login-form" id="loginForm">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" placeholder="seu@email.com" required />
+
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" placeholder="••••••••" required />
+
+        <div class="form-row">
+          <label class="checkbox">
+            <input type="checkbox" name="lembrar" />
+            Lembrar de mim
+          </label>
+          <a href="#" class="link-muted">Esqueceu a senha?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Entrar</button>
+        <p class="form-message" id="loginMsg" role="status"></p>
+      </form>
+
+      <p class="signup-hint">Ainda não faz parte? <a href="cadastro.html" class="link-gold">Cadastre-se</a></p>
+
+      <nav class="login-links">
+        <a href="agenda.html">Ver agenda</a>
+        <a href="bandas.html">Bandas</a>
+        <a href="sobre.html">Sobre a comunidade</a>
+      </nav>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sobre — Comunidade Sinfônica</title>
+  <meta name="description" content="Conheça a Comunidade Sinfônica e siga nossas redes sociais." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230a0505' stroke='%23d4af37' stroke-width='3'/%3E%3Ctext x='32' y='43' font-size='30' text-anchor='middle' fill='%23d4af37'%3E%E2%99%AA%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="sobre.html" class="logo">Comunidade <span>Sinfônica</span></a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="main-nav" id="mainNav">
+        <span class="nav-greeting" id="userGreeting"></span>
+        <a href="agenda.html">Agenda</a>
+        <a href="bandas.html">Bandas</a>
+        <a href="sobre.html" aria-current="page">Sobre</a>
+        <a href="admin.html" class="nav-admin" id="adminLink">Admin</a>
+        <a href="index.html" class="nav-logout" id="logoutLink">Sair</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero container">
+      <h1>Sobre a Comunidade</h1>
+    </section>
+
+    <!-- TODO Marina: ajuste esse texto como quiser -->
+    <section class="about-text">
+      <p>
+        A <strong>Comunidade Sinfônica</strong> nasceu para reunir bandas, músicos e fãs que unem
+        a força do metal à grandiosidade da orquestra. Aqui você encontra a agenda de shows,
+        conhece novos projetos e se conecta com quem também acredita que cordas, corais e
+        guitarras distorcidas pertencem ao mesmo palco.
+      </p>
+      <p>
+        Um espaço para descobrir bandas, trocar experiências e fortalecer a cena sinfônica —
+        feito por fãs, para fãs.
+      </p>
+    </section>
+
+    <!--
+      TODO Marina: troque os href="#" pelos links reais das redes sociais
+      (Instagram, WhatsApp, YouTube, etc.) quando estiverem prontos.
+    -->
+    <section class="social-section">
+      <h2>Nossas Redes</h2>
+      <div class="social-grid">
+        <a href="#" class="social-card">
+          <span class="social-icon">📷</span>
+          Instagram
+        </a>
+        <a href="#" class="social-card">
+          <span class="social-icon">👤</span>
+          Facebook
+        </a>
+        <a href="#" class="social-card">
+          <span class="social-icon">▶️</span>
+          YouTube
+        </a>
+        <a href="#" class="social-card">
+          <span class="social-icon">🎵</span>
+          TikTok
+        </a>
+        <a href="#" class="social-card">
+          <span class="social-icon">💬</span>
+          WhatsApp
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2026 Comunidade Sinfônica — todos os direitos reservados</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
