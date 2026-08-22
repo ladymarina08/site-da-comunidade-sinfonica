@@ -2,9 +2,15 @@ services:
   - type: web
     name: comunidade-sinfonica
     env: python
-    plan: free
+    plan: standard
     buildCommand: "pip install -r backend/requirements.txt"
     startCommand: "cd backend && gunicorn --bind 0.0.0.0:$PORT --timeout 60 app:app"
+    disk:
+      name: dados
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: SECRET_KEY
         generateValue: true
+      - key: DATA_DIR
+        value: /var/data

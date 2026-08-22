@@ -73,64 +73,62 @@ backend (`GET /api/shows` e `GET /api/bandas`) toda vez que a página carrega. Q
 admin cadastra/exclui pelo painel em `admin.html`; a mudança aparece pra todo mundo assim
 que a página é recarregada.
 
-## Banco de dados: Turso
+## Banco de dados
 
-O site guarda os dados (usuários, shows, bandas) num banco [Turso](https://turso.tech) —
-um banco de verdade, hospedado à parte do servidor, gratuito. Isso existe porque o Render
-(onde o site roda) não guarda arquivos de forma permanente: qualquer coisa salva
-diretamente no disco dele (como um arquivo SQLite) se perde toda vez que o serviço reinicia
-por inatividade. Guardando os dados no Turso, eles não dependem do Render pra continuar
-existindo.
+O site guarda os dados (usuários, shows, bandas) num arquivo SQLite comum — o mesmo jeito
+simples desde o início do projeto. Esse arquivo mora em `DATA_DIR/comunidade.db`, onde
+`DATA_DIR` é uma variável de ambiente:
 
-**Como funciona no código**: `backend/db.py` usa o Turso automaticamente quando as
-variáveis `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` estão definidas (produção). Sem elas,
-usa um arquivo SQLite local (`backend/comunidade.db`) — mais simples pra rodar no seu PC,
-sem precisar de conta em lugar nenhum pra só testar localmente.
+- **Local (seu PC)**: sem essa variável definida, cai automaticamente na pasta
+  `backend/comunidade.db` — não precisa configurar nada pra rodar localmente.
+- **Produção (Render)**: `DATA_DIR` aponta pro **disco persistente** do serviço (configurado
+  em `render.yaml`, montado em `/var/data`) — um "HD" de verdade que não se apaga quando o
+  servidor reinicia, diferente do disco padrão do Render (que é temporário e reseta a cada
+  vez que o serviço "dorme" e acorda no plano grátis).
 
-## Publicar no Render (grátis)
+> Esse projeto chegou a usar o [Turso](https://turso.tech) (banco remoto) numa fase anterior,
+> mas conexões remotas viviam travando/expirando em uso esporádico e chegaram a derrubar o
+> site inteiro (o Render só roda um processo). Voltamos pro SQLite simples + disco
+> persistente do Render — menos peças, mais confiável pro tamanho desse projeto.
+
+## Publicar no Render
 
 O GitHub Pages **não serve** pra esse projeto — ele só hospeda HTML/CSS/JS estático, e o
 site inteiro (login, agenda, painel admin) depende do backend Flask. O Render roda Python
-de verdade, de graça, e já está tudo configurado em `render.yaml` na raiz do projeto.
+de verdade, e já está tudo configurado em `render.yaml` na raiz do projeto (inclusive o
+disco persistente).
+
+Exige um plano pago do Render (o disco persistente não está disponível no plano grátis).
 
 1. Crie uma conta em [render.com](https://render.com) (dá pra entrar direto com o GitHub).
 2. No painel do Render, clique em **"New +" → "Blueprint"**.
 3. Selecione o repositório `site-da-comunidade-sinfonica`. O Render lê o `render.yaml`
-   sozinho e já configura build, start command e uma `SECRET_KEY` segura automaticamente.
-4. Clique em **"Apply"** e espere o primeiro deploy terminar (alguns minutos).
-5. Crie uma conta grátis em [turso.tech](https://turso.tech), crie um banco de dados, e
-   pegue a **URL** e o **Token** dele (normalmente em algo como "Connect" no painel).
-6. No painel do Render → **Environment**, adicione as variáveis:
-   - `TURSO_DATABASE_URL` = a URL do banco (começa com `libsql://`)
-   - `TURSO_AUTH_TOKEN` = o token
-   - `ADMIN_EMAIL` = o(s) e-mail(s) de quem vai ser admin, separados por vírgula sem
-     espaço se for mais de um (ex: `voce@gmail.com,parceira@gmail.com`)
-
-   Salvar reinicia o serviço sozinho.
-7. Acesse a URL que o Render deu (algo como `https://comunidade-sinfonica.onrender.com`) e
+   sozinho e já configura build, start command, o disco persistente (`/var/data`) e uma
+   `SECRET_KEY` segura automaticamente.
+4. Clique em **"Apply"** e espere o primeiro deploy terminar (alguns minutos). Se o Render
+   pedir confirmação de plano/pagamento nesse passo, é normal — o disco exige plano pago.
+5. **Antes de cadastrar qualquer conta**, vá no painel → **Environment** → adicione a
+   variável `ADMIN_EMAIL` com o(s) e-mail(s) de quem vai ser admin, separados por vírgula
+   sem espaço se for mais de um (ex: `voce@gmail.com,parceira@gmail.com`). Salvar reinicia
+   o serviço sozinho.
+6. Acesse a URL que o Render deu (algo como `https://comunidade-sinfonica.onrender.com`) e
    cadastre as contas normalmente pela tela de cadastro do site — quem estiver no
    `ADMIN_EMAIL` já nasce admin na hora.
 
-Com o Turso configurado, os dados **não desaparecem mais** quando o site "dorme" e acorda
-de novo (isso só acontecia antes, guardando tudo num arquivo dentro do próprio Render).
-Só uma coisa continua igual: o serviço grátis do Render ainda "dorme" depois de um tempo
-sem acesso, e o primeiro acesso do dia demora uns 30-60s pra acordar — isso é só o servidor
-ligando de novo, os dados em si ficam salvos no Turso o tempo todo.
-
-Pra promover um admin novo depois que o site já estiver no ar: a pessoa se cadastra
-primeiro, e você roda (com as mesmas variáveis do Turso definidas no terminal, veja abaixo)
-`python promover_admin.py email@exemplo.com` — ou edita o `ADMIN_EMAIL` no Render antes de
-ela se cadastrar, do mesmo jeito que da primeira vez.
+Com o disco persistente, os dados não se perdem mais entre deploys nem quando o serviço
+reinicia. Pra promover um admin novo depois que o site já estiver no ar: a pessoa se
+cadastra primeiro, e você roda `python promover_admin.py email@exemplo.com` — mas apontando
+pro banco certo, veja a seção abaixo.
 
 ## Rodando os scripts (promover_admin.py etc.) contra o site publicado
 
-Por padrão, `promover_admin.py` mexe no banco local do seu PC. Pra ele mexer no banco do
-site publicado (Turso), defina as mesmas variáveis que estão no Render antes de rodar:
+Por padrão, `promover_admin.py` mexe no banco local do seu PC (`backend/comunidade.db`).
+Pra ele mexer no banco do site publicado, é preciso rodar o script **de dentro do próprio
+Render** (ele não tem como acessar o disco persistente do Render direto do seu PC) — use o
+"Shell" do serviço no painel do Render:
 
 ```bash
-# Windows (PowerShell)
-$env:TURSO_DATABASE_URL="libsql://sua-url.turso.io"
-$env:TURSO_AUTH_TOKEN="seu-token"
+cd backend
 python promover_admin.py --listar
 ```
 
