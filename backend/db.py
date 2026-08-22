@@ -24,6 +24,12 @@ USANDO_TURSO = bool(TURSO_URL and TURSO_TOKEN)
 
 DB_PATH = Path(__file__).resolve().parent / "comunidade.db"
 
+# Conexão com o Turso é reaproveitada entre requisições (fica cara e lenta
+# abrir uma conexão de rede nova a cada clique — foi isso que travou um
+# worker do Render e derrubou ele por timeout). Cada processo do gunicorn
+# mantém a sua própria.
+_conexao_turso_compartilhada = None
+
 
 class IntegrityError(Exception):
     """Violação de restrição única (ex: e-mail duplicado) — mesma exceção
@@ -73,12 +79,20 @@ class Cursor:
 
 class Conexao:
     """Conexão com o banco (Turso ou arquivo local), com suporte a
-    "with get_db() as conn:" — comita ao sair do bloco sem erro, e sempre
-    fecha a conexão."""
+    "with get_db() as conn:" — comita ao sair do bloco sem erro. No Turso,
+    a conexão de rede é compartilhada entre requisições (ver
+    _conexao_turso_compartilhada) e por isso não é fechada aqui; no arquivo
+    local, abrir/fechar por requisição é barato e continua como antes."""
 
     def __init__(self):
+        global _conexao_turso_compartilhada
+
         if USANDO_TURSO:
-            self._conn = libsql.connect(database=TURSO_URL, auth_token=TURSO_TOKEN)
+            if _conexao_turso_compartilhada is None:
+                _conexao_turso_compartilhada = libsql.connect(
+                    database=TURSO_URL, auth_token=TURSO_TOKEN
+                )
+            self._conn = _conexao_turso_compartilhada
         else:
             self._conn = libsql.connect(str(DB_PATH))
 
@@ -95,7 +109,9 @@ class Conexao:
         self._conn.commit()
 
     def close(self) -> None:
-        self._conn.close()
+        if not USANDO_TURSO:
+            self._conn.close()
+        # a conexão do Turso fica aberta pra ser reaproveitada na próxima requisição
 
     def __enter__(self) -> "Conexao":
         return self
@@ -103,6 +119,13 @@ class Conexao:
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is None:
             self.commit()
+        else:
+            # desfaz qualquer coisa pendente pra não deixar a conexão
+            # (principalmente a compartilhada do Turso) suja pro próximo uso
+            try:
+                self._conn.rollback()
+            except Exception:
+                pass
         self.close()
 
 
