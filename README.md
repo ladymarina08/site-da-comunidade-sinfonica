@@ -73,6 +73,20 @@ backend (`GET /api/shows` e `GET /api/bandas`) toda vez que a página carrega. Q
 admin cadastra/exclui pelo painel em `admin.html`; a mudança aparece pra todo mundo assim
 que a página é recarregada.
 
+## Banco de dados: Turso
+
+O site guarda os dados (usuários, shows, bandas) num banco [Turso](https://turso.tech) —
+um banco de verdade, hospedado à parte do servidor, gratuito. Isso existe porque o Render
+(onde o site roda) não guarda arquivos de forma permanente: qualquer coisa salva
+diretamente no disco dele (como um arquivo SQLite) se perde toda vez que o serviço reinicia
+por inatividade. Guardando os dados no Turso, eles não dependem do Render pra continuar
+existindo.
+
+**Como funciona no código**: `backend/db.py` usa o Turso automaticamente quando as
+variáveis `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` estão definidas (produção). Sem elas,
+usa um arquivo SQLite local (`backend/comunidade.db`) — mais simples pra rodar no seu PC,
+sem precisar de conta em lugar nenhum pra só testar localmente.
+
 ## Publicar no Render (grátis)
 
 O GitHub Pages **não serve** pra esse projeto — ele só hospeda HTML/CSS/JS estático, e o
@@ -84,38 +98,41 @@ de verdade, de graça, e já está tudo configurado em `render.yaml` na raiz do 
 3. Selecione o repositório `site-da-comunidade-sinfonica`. O Render lê o `render.yaml`
    sozinho e já configura build, start command e uma `SECRET_KEY` segura automaticamente.
 4. Clique em **"Apply"** e espere o primeiro deploy terminar (alguns minutos).
-5. **Antes de cadastrar qualquer conta**, vá no painel do Render → **Environment** →
-   adicione a variável `ADMIN_EMAIL` com o(s) e-mail(s) de quem vai ser admin (separados
-   por vírgula, sem espaço, se for mais de um — ex: `voce@gmail.com,parceira@gmail.com`).
+5. Crie uma conta grátis em [turso.tech](https://turso.tech), crie um banco de dados, e
+   pegue a **URL** e o **Token** dele (normalmente em algo como "Connect" no painel).
+6. No painel do Render → **Environment**, adicione as variáveis:
+   - `TURSO_DATABASE_URL` = a URL do banco (começa com `libsql://`)
+   - `TURSO_AUTH_TOKEN` = o token
+   - `ADMIN_EMAIL` = o(s) e-mail(s) de quem vai ser admin, separados por vírgula sem
+     espaço se for mais de um (ex: `voce@gmail.com,parceira@gmail.com`)
+
    Salvar reinicia o serviço sozinho.
-6. **Só depois** disso, acesse a URL que o Render deu (algo como
-   `https://comunidade-sinfonica.onrender.com`) e cadastre as contas normalmente pela tela
-   de cadastro do site — cada uma nasce admin na hora, automaticamente.
+7. Acesse a URL que o Render deu (algo como `https://comunidade-sinfonica.onrender.com`) e
+   cadastre as contas normalmente pela tela de cadastro do site — quem estiver no
+   `ADMIN_EMAIL` já nasce admin na hora.
 
-⚠️ **A ordem importa**: o cadastro precisa vir *depois* de configurar o `ADMIN_EMAIL`, nunca
-antes. Isso porque mudar uma variável de ambiente no Render dispara um novo deploy, e o
-deploy reseta o banco — uma conta cadastrada antes seria apagada nesse meio-tempo, antes de
-virar admin. Cadastrando depois, a conta já nasce admin na mesma hora, sem depender de
-nenhum reinício.
+Com o Turso configurado, os dados **não desaparecem mais** quando o site "dorme" e acorda
+de novo (isso só acontecia antes, guardando tudo num arquivo dentro do próprio Render).
+Só uma coisa continua igual: o serviço grátis do Render ainda "dorme" depois de um tempo
+sem acesso, e o primeiro acesso do dia demora uns 30-60s pra acordar — isso é só o servidor
+ligando de novo, os dados em si ficam salvos no Turso o tempo todo.
 
-Pra adicionar um admin novo mais tarde num site que já está no ar: edite o `ADMIN_EMAIL`
-incluindo o e-mail novo, salve (o serviço reinicia sozinho e o banco reseta), e só então a
-pessoa cadastra a conta dela.
+Pra promover um admin novo depois que o site já estiver no ar: a pessoa se cadastra
+primeiro, e você roda (com as mesmas variáveis do Turso definidas no terminal, veja abaixo)
+`python promover_admin.py email@exemplo.com` — ou edita o `ADMIN_EMAIL` no Render antes de
+ela se cadastrar, do mesmo jeito que da primeira vez.
 
-**Importante sobre o plano grátis do Render — leia antes de usar com gente de verdade:**
-- O serviço "dorme" depois de um tempo sem acesso; o primeiro acesso do dia demora uns
-  30-60s pra acordar. Normal, não é bug.
-- **O disco só reseta quando sai um deploy novo** (ou seja, quando a gente der `git push`
-  de uma atualização) — no dia a dia, entre um push e outro, os dados ficam salvos
-  normalmente.
-- Quando um deploy novo reseta o banco: as 59 bandas e a agenda atual voltam sozinhas
-  (o app se auto-popula com os dados de `backend/seed_bandas.py` e `backend/seed_agenda.py`
-  se as tabelas estiverem vazias), e sua conta vira admin de novo automaticamente por causa
-  da variável `ADMIN_EMAIL`. Mas **contas de outras pessoas e shows/bandas adicionados
-  depois pelo painel admin não sobrevivem** a um reset — pra isso não acontecer de verdade
-  (uso com a comunidade toda), o próximo passo é trocar o SQLite por um banco de verdade
-  (ex: PostgreSQL, que o Render também oferece grátis por um tempo) — é só avisar quando
-  quiser fazer essa migração.
+## Rodando os scripts (promover_admin.py etc.) contra o site publicado
+
+Por padrão, `promover_admin.py` mexe no banco local do seu PC. Pra ele mexer no banco do
+site publicado (Turso), defina as mesmas variáveis que estão no Render antes de rodar:
+
+```bash
+# Windows (PowerShell)
+$env:TURSO_DATABASE_URL="libsql://sua-url.turso.io"
+$env:TURSO_AUTH_TOKEN="seu-token"
+python promover_admin.py --listar
+```
 
 ## Pendências para você completar
 

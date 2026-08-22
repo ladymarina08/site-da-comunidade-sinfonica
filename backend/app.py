@@ -16,7 +16,6 @@ O site fica disponível em http://localhost:5000
 import os
 import re
 import secrets
-import sqlite3
 from datetime import timedelta
 from functools import wraps
 from pathlib import Path
@@ -24,12 +23,12 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from db import IntegrityError, coluna_ja_existe, get_db
 import seed_bandas
 import seed_agenda
 
 BACKEND_DIR = Path(__file__).resolve().parent
 BASE_DIR = BACKEND_DIR.parent  # pasta comunidade-sinfonica/ (onde ficam os .html)
-DB_PATH = BACKEND_DIR / "comunidade.db"
 SECRET_KEY_PATH = BACKEND_DIR / "secret.key"
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -59,12 +58,6 @@ app.config.update(
 )
 
 
-def get_db() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
 def init_db() -> None:
     with get_db() as conn:
         conn.execute(
@@ -83,8 +76,9 @@ def init_db() -> None:
         # coluna "admin"), adiciona ela agora. Ignora erro se já existir.
         try:
             conn.execute("ALTER TABLE usuarios ADD COLUMN admin INTEGER NOT NULL DEFAULT 0")
-        except sqlite3.OperationalError:
-            pass
+        except ValueError as erro:
+            if not coluna_ja_existe(erro):
+                raise
 
         conn.execute(
             """
@@ -106,8 +100,9 @@ def init_db() -> None:
         # (e antes do horário virar opcional).
         try:
             conn.execute("ALTER TABLE shows ADD COLUMN observacoes TEXT DEFAULT ''")
-        except sqlite3.OperationalError:
-            pass
+        except ValueError as erro:
+            if not coluna_ja_existe(erro):
+                raise
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS bandas (
@@ -126,8 +121,9 @@ def init_db() -> None:
         # Migração leve: bancos criados antes do campo "instagram" existir.
         try:
             conn.execute("ALTER TABLE bandas ADD COLUMN instagram TEXT DEFAULT ''")
-        except sqlite3.OperationalError:
-            pass
+        except ValueError as erro:
+            if not coluna_ja_existe(erro):
+                raise
 
 
 def emails_admin_configurados() -> set[str]:
@@ -251,7 +247,7 @@ def registrar():
                 (nome, email, senha_hash, int(é_admin)),
             )
             usuario_id = cursor.lastrowid
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         return jsonify(ok=False, erro="Já existe uma conta com esse e-mail."), 409
 
     session.clear()

@@ -6,29 +6,31 @@ para cadastrar shows e bandas.
 A pessoa precisa ter feito o cadastro pelo site (cadastro.html) ANTES de
 rodar este script — ele só promove contas que já existem.
 
+Por padrão mexe no banco local (backend/comunidade.db). Pra mexer no banco
+do site publicado (Turso), defina TURSO_DATABASE_URL e TURSO_AUTH_TOKEN no
+terminal antes de rodar (os mesmos valores que estão no Render, em
+Environment) — veja o README para o passo a passo.
+
 Uso:
     python promover_admin.py email@exemplo.com
     python promover_admin.py email@exemplo.com --remover
     python promover_admin.py --listar
 """
 
-import sqlite3
 import sys
-from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent / "comunidade.db"
+import db
 
 
-def conectar() -> sqlite3.Connection:
-    if not DB_PATH.exists():
+def conectar() -> db.Conexao:
+    if not db.USANDO_TURSO and not db.DB_PATH.exists():
         print(
-            "Banco de dados não encontrado em backend/comunidade.db.\n"
-            "Rode 'python app.py' pelo menos uma vez (e crie uma conta pelo site) antes de usar este script."
+            "Banco de dados local não encontrado em backend/comunidade.db.\n"
+            "Rode 'python app.py' pelo menos uma vez (e crie uma conta pelo site) antes de usar este script.\n"
+            "Ou, pra mexer no banco do site publicado, defina TURSO_DATABASE_URL e TURSO_AUTH_TOKEN antes de rodar."
         )
         sys.exit(1)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return db.get_db()
 
 
 def listar_usuarios() -> None:
