@@ -90,6 +90,11 @@ de verdade, de graça, e já está tudo configurado em `render.yaml` na raiz do 
    - `ADMIN_EMAIL` = o e-mail que você acabou de cadastrar
    Isso salva e reinicia o serviço sozinho — depois disso sua conta já é admin.
 
+Pra ter **mais de um admin** (ex: você e sua parceira): a pessoa se cadastra normalmente
+pelo site publicado, e você edita a variável `ADMIN_EMAIL` no Render juntando os e-mails
+separados por vírgula, sem espaço — ex: `voce@gmail.com,parceira@gmail.com`. Salvar reinicia
+o serviço e promove todo mundo da lista.
+
 **Importante sobre o plano grátis do Render — leia antes de usar com gente de verdade:**
 - O serviço "dorme" depois de um tempo sem acesso; o primeiro acesso do dia demora uns
   30-60s pra acordar. Normal, não é bug.

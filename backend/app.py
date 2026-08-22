@@ -132,14 +132,17 @@ def init_db() -> None:
 
 def bootstrap_admin() -> None:
     """Se a variável de ambiente ADMIN_EMAIL estiver definida, garante que
-    aquele e-mail (se já cadastrado) seja administrador. Existe pra dar pra
-    promover o primeiro admin em serviços como o Render, onde não dá pra
-    rodar promover_admin.py direto no servidor."""
-    email_admin = os.environ.get("ADMIN_EMAIL", "").strip().lower()
-    if not email_admin:
+    aqueles e-mails (se já cadastrados) sejam administradores. Aceita mais de
+    um e-mail separado por vírgula (ex: "a@x.com,b@y.com"). Existe pra dar pra
+    promover admins em serviços como o Render, onde não dá pra rodar
+    promover_admin.py direto no servidor."""
+    emails_admin = os.environ.get("ADMIN_EMAIL", "")
+    emails = [email.strip().lower() for email in emails_admin.split(",") if email.strip()]
+    if not emails:
         return
     with get_db() as conn:
-        conn.execute("UPDATE usuarios SET admin = 1 WHERE email = ?", (email_admin,))
+        for email in emails:
+            conn.execute("UPDATE usuarios SET admin = 1 WHERE email = ?", (email,))
 
 
 def seed_inicial() -> None:
