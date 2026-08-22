@@ -11,9 +11,20 @@ quando o servidor reinicia. Sem essas variáveis, usa um arquivo SQLite local
 O resto do app.py não precisa saber qual dos dois está em uso: chama
 get_db() e usa como um cursor comum (execute, fetchone, fetchall,
 lastrowid), com acesso às colunas por nome (linha["coluna"]) nos dois casos.
+
+Conexões remotas do libSQL podem travar ou "expirar" depois de um tempo sem
+uso (é um problema conhecido da biblioteca — veja
+https://github.com/tursodatabase/libsql/issues/985). Como o servidor do
+Render só roda um processo, uma trava assim derruba o site inteiro até o
+Render perceber e reiniciar à força. Por isso: cada requisição abre a sua
+própria conexão (não reaproveita uma antiga que pode estar travada), e toda
+chamada ao Turso tem um limite de tempo (TEMPO_LIMITE_PADRAO) — se estourar,
+a operação desiste e devolve um erro tratável em vez de travar o servidor.
 """
 
 import os
+import queue as fila_module
+import threading
 from pathlib import Path
 
 import libsql
@@ -24,16 +35,43 @@ USANDO_TURSO = bool(TURSO_URL and TURSO_TOKEN)
 
 DB_PATH = Path(__file__).resolve().parent / "comunidade.db"
 
-# Conexão com o Turso é reaproveitada entre requisições (fica cara e lenta
-# abrir uma conexão de rede nova a cada clique — foi isso que travou um
-# worker do Render e derrubou ele por timeout). Cada processo do gunicorn
-# mantém a sua própria.
-_conexao_turso_compartilhada = None
+TEMPO_LIMITE_PADRAO = 10  # segundos
 
 
 class IntegrityError(Exception):
     """Violação de restrição única (ex: e-mail duplicado) — mesma exceção
     seja o banco por trás o SQLite local ou o Turso."""
+
+
+class TempoEsgotado(Exception):
+    """O banco (Turso) demorou demais pra responder e a operação foi
+    abandonada, pra não travar o site inteiro nesse meio-tempo."""
+
+
+def _com_tempo_limite(funcao, tempo_limite: float = TEMPO_LIMITE_PADRAO):
+    """Roda "funcao" (sem argumentos) numa thread separada e desiste depois
+    de "tempo_limite" segundos, mesmo que a thread continue travada por
+    dentro (a chamada nativa do libsql não tem como ser cancelada à força —
+    só abandonamos ela e seguimos em frente)."""
+    resultado_fila: fila_module.Queue = fila_module.Queue(maxsize=1)
+
+    def alvo() -> None:
+        try:
+            resultado_fila.put(("ok", funcao()))
+        except Exception as erro:  # repassa qualquer erro pro chamador original
+            resultado_fila.put(("erro", erro))
+
+    thread = threading.Thread(target=alvo, daemon=True)
+    thread.start()
+    thread.join(timeout=tempo_limite)
+
+    if thread.is_alive():
+        raise TempoEsgotado("O banco de dados demorou demais pra responder. Tente novamente.")
+
+    tipo, valor = resultado_fila.get()
+    if tipo == "erro":
+        raise valor
+    return valor
 
 
 class Linha:
@@ -79,26 +117,22 @@ class Cursor:
 
 class Conexao:
     """Conexão com o banco (Turso ou arquivo local), com suporte a
-    "with get_db() as conn:" — comita ao sair do bloco sem erro. No Turso,
-    a conexão de rede é compartilhada entre requisições (ver
-    _conexao_turso_compartilhada) e por isso não é fechada aqui; no arquivo
-    local, abrir/fechar por requisição é barato e continua como antes."""
+    "with get_db() as conn:" — comita ao sair do bloco sem erro."""
 
     def __init__(self):
-        global _conexao_turso_compartilhada
-
         if USANDO_TURSO:
-            if _conexao_turso_compartilhada is None:
-                _conexao_turso_compartilhada = libsql.connect(
-                    database=TURSO_URL, auth_token=TURSO_TOKEN
-                )
-            self._conn = _conexao_turso_compartilhada
+            self._conn = _com_tempo_limite(
+                lambda: libsql.connect(database=TURSO_URL, auth_token=TURSO_TOKEN)
+            )
         else:
             self._conn = libsql.connect(str(DB_PATH))
 
     def execute(self, sql: str, params=()):
         try:
-            cursor_bruto = self._conn.execute(sql, params)
+            if USANDO_TURSO:
+                cursor_bruto = _com_tempo_limite(lambda: self._conn.execute(sql, params))
+            else:
+                cursor_bruto = self._conn.execute(sql, params)
         except ValueError as erro:
             if "UNIQUE constraint failed" in str(erro):
                 raise IntegrityError(str(erro)) from erro
@@ -109,9 +143,10 @@ class Conexao:
         self._conn.commit()
 
     def close(self) -> None:
-        if not USANDO_TURSO:
+        try:
             self._conn.close()
-        # a conexão do Turso fica aberta pra ser reaproveitada na próxima requisição
+        except Exception:
+            pass
 
     def __enter__(self) -> "Conexao":
         return self
@@ -119,13 +154,6 @@ class Conexao:
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is None:
             self.commit()
-        else:
-            # desfaz qualquer coisa pendente pra não deixar a conexão
-            # (principalmente a compartilhada do Turso) suja pro próximo uso
-            try:
-                self._conn.rollback()
-            except Exception:
-                pass
         self.close()
 
 

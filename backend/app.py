@@ -23,7 +23,7 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from db import IntegrityError, coluna_ja_existe, get_db
+from db import IntegrityError, TempoEsgotado, coluna_ja_existe, get_db
 import seed_bandas
 import seed_agenda
 
@@ -56,6 +56,13 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
 )
+
+
+@app.errorhandler(TempoEsgotado)
+def tratar_tempo_esgotado(erro):
+    """Se uma operação no banco (Turso) demorar demais, devolve um erro
+    limpo em vez de deixar a requisição travada até o servidor cair."""
+    return jsonify(ok=False, erro="O servidor demorou demais pra responder. Tente novamente."), 503
 
 
 def init_db() -> None:
