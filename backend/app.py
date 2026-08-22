@@ -13,6 +13,7 @@ Como rodar:
 O site fica disponível em http://localhost:5000
 """
 
+import os
 import re
 import secrets
 import sqlite3
@@ -22,6 +23,9 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
+
+import seed_bandas
+import seed_agenda
 
 BACKEND_DIR = Path(__file__).resolve().parent
 BASE_DIR = BACKEND_DIR.parent  # pasta comunidade-sinfonica/ (onde ficam os .html)
@@ -34,7 +38,12 @@ HORA_REGEX = re.compile(r"^\d{2}:\d{2}$")  # HH:MM
 
 
 def carregar_secret_key() -> str:
-    """Gera (na primeira vez) e reaproveita uma chave local para assinar os cookies de sessão."""
+    """Usa a variável de ambiente SECRET_KEY se existir (produção, ex: Render —
+    assim a chave não se perde a cada novo deploy). Em desenvolvimento local,
+    gera e reaproveita uma chave salva em backend/secret.key."""
+    da_variavel_ambiente = os.environ.get("SECRET_KEY")
+    if da_variavel_ambiente:
+        return da_variavel_ambiente
     if SECRET_KEY_PATH.exists():
         return SECRET_KEY_PATH.read_text().strip()
     chave = secrets.token_hex(32)
@@ -119,6 +128,47 @@ def init_db() -> None:
             conn.execute("ALTER TABLE bandas ADD COLUMN instagram TEXT DEFAULT ''")
         except sqlite3.OperationalError:
             pass
+
+
+def bootstrap_admin() -> None:
+    """Se a variável de ambiente ADMIN_EMAIL estiver definida, garante que
+    aquele e-mail (se já cadastrado) seja administrador. Existe pra dar pra
+    promover o primeiro admin em serviços como o Render, onde não dá pra
+    rodar promover_admin.py direto no servidor."""
+    email_admin = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+    if not email_admin:
+        return
+    with get_db() as conn:
+        conn.execute("UPDATE usuarios SET admin = 1 WHERE email = ?", (email_admin,))
+
+
+def seed_inicial() -> None:
+    """Popula bandas e shows com os dados já cadastrados pela comunidade,
+    mas só se as tabelas estiverem vazias — assim o site nunca fica "pelado"
+    quando o disco reseta (ex: a cada novo deploy no plano grátis do Render),
+    e não duplica nada se as tabelas já tiverem dados."""
+    with get_db() as conn:
+        if not conn.execute("SELECT 1 FROM bandas LIMIT 1").fetchone():
+            for nome, genero, instagram in seed_bandas.BANDAS:
+                conn.execute(
+                    "INSERT INTO bandas (nome, genero, descricao, emoji, instagram) VALUES (?, ?, ?, ?, ?)",
+                    (nome, genero, "", seed_bandas.EMOJI_PADRAO, instagram or ""),
+                )
+
+        if not conn.execute("SELECT 1 FROM shows LIMIT 1").fetchone():
+            for banda, local, cidade, data, horario, observacoes in seed_agenda.SHOWS:
+                conn.execute(
+                    "INSERT INTO shows (banda, local, cidade, data, horario, observacoes) VALUES (?, ?, ?, ?, ?, ?)",
+                    (banda, local, cidade, data, horario, observacoes),
+                )
+
+
+# Roda sempre que o módulo é carregado — seja com "python app.py" (dev local)
+# ou importado pelo gunicorn em produção (o bloco "if __name__" no fim do
+# arquivo não executa nesse segundo caso).
+init_db()
+bootstrap_admin()
+seed_inicial()
 
 
 # =====================================================
@@ -404,7 +454,8 @@ def arquivos_estaticos(caminho):
 
 
 if __name__ == "__main__":
-    init_db()
     # host="0.0.0.0" faz o servidor aceitar conexões de outros dispositivos na
     # mesma rede (ex: celular), não só da própria máquina.
+    # debug=True só é usado aqui (dev local) — em produção o gunicorn nem
+    # executa este bloco, então o modo debug nunca fica exposto publicamente.
     app.run(host="0.0.0.0", debug=True, port=5000)

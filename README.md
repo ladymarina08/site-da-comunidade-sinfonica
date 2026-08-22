@@ -73,15 +73,44 @@ backend (`GET /api/shows` e `GET /api/bandas`) toda vez que a página carrega. Q
 admin cadastra/exclui pelo painel em `admin.html`; a mudança aparece pra todo mundo assim
 que a página é recarregada.
 
+## Publicar no Render (grátis)
+
+O GitHub Pages **não serve** pra esse projeto — ele só hospeda HTML/CSS/JS estático, e o
+site inteiro (login, agenda, painel admin) depende do backend Flask. O Render roda Python
+de verdade, de graça, e já está tudo configurado em `render.yaml` na raiz do projeto.
+
+1. Crie uma conta em [render.com](https://render.com) (dá pra entrar direto com o GitHub).
+2. No painel do Render, clique em **"New +" → "Blueprint"**.
+3. Selecione o repositório `site-da-comunidade-sinfonica`. O Render lê o `render.yaml`
+   sozinho e já configura build, start command e uma `SECRET_KEY` segura automaticamente.
+4. Clique em **"Apply"** e espere o primeiro deploy terminar (alguns minutos).
+5. Acesse a URL que o Render deu (algo como `https://comunidade-sinfonica.onrender.com`),
+   crie sua conta normalmente pela tela de cadastro do site.
+6. Volte no painel do Render → **Environment** → adicione uma variável:
+   - `ADMIN_EMAIL` = o e-mail que você acabou de cadastrar
+   Isso salva e reinicia o serviço sozinho — depois disso sua conta já é admin.
+
+**Importante sobre o plano grátis do Render — leia antes de usar com gente de verdade:**
+- O serviço "dorme" depois de um tempo sem acesso; o primeiro acesso do dia demora uns
+  30-60s pra acordar. Normal, não é bug.
+- **O disco só reseta quando sai um deploy novo** (ou seja, quando a gente der `git push`
+  de uma atualização) — no dia a dia, entre um push e outro, os dados ficam salvos
+  normalmente.
+- Quando um deploy novo reseta o banco: as 59 bandas e a agenda atual voltam sozinhas
+  (o app se auto-popula com os dados de `backend/seed_bandas.py` e `backend/seed_agenda.py`
+  se as tabelas estiverem vazias), e sua conta vira admin de novo automaticamente por causa
+  da variável `ADMIN_EMAIL`. Mas **contas de outras pessoas e shows/bandas adicionados
+  depois pelo painel admin não sobrevivem** a um reset — pra isso não acontecer de verdade
+  (uso com a comunidade toda), o próximo passo é trocar o SQLite por um banco de verdade
+  (ex: PostgreSQL, que o Render também oferece grátis por um tempo) — é só avisar quando
+  quiser fazer essa migração.
+
 ## Pendências para você completar
 
-1. **Se tornar admin**: cadastre sua própria conta pelo site e rode `promover_admin.py`
-   com o seu e-mail (veja acima) — sem isso ninguém consegue usar o painel.
-2. **Redes sociais**: em `sobre.html`, troque os `href="#"` dos cards de rede social pelos links reais (Instagram, WhatsApp, YouTube, TikTok, Facebook).
-3. **Texto "Sobre"**: ajuste o texto de apresentação da comunidade em `sobre.html` como preferir.
-4. **"Esqueceu a senha?"**: o link existe em `index.html` mas ainda não tem funcionalidade (recuperação de senha por e-mail fica pra uma próxima etapa).
-5. **Editar show/banda existente**: hoje o painel só cadastra e exclui — pra corrigir algo é excluir e cadastrar de novo. Editar in-line é uma evolução futura simples de adicionar.
-6. **Publicar online**: pra colocar no ar de verdade, você vai precisar de um serviço que rode Python (ex: Render, Railway, PythonAnywhere) — GitHub Pages/Netlify/Vercel (modo estático) não rodam o backend Flask.
+1. **Redes sociais**: em `sobre.html`, troque os `href="#"` dos cards de rede social pelos links reais (Instagram, WhatsApp, YouTube, TikTok, Facebook).
+2. **Texto "Sobre"**: ajuste o texto de apresentação da comunidade em `sobre.html` como preferir.
+3. **"Esqueceu a senha?"**: o link existe em `index.html` mas ainda não tem funcionalidade (recuperação de senha por e-mail fica pra uma próxima etapa).
+4. **Editar show/banda existente**: hoje o painel só cadastra e exclui — pra corrigir algo é excluir e cadastrar de novo. Editar in-line é uma evolução futura simples de adicionar.
 
 ## Design
 
