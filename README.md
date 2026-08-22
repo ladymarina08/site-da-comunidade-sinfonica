@@ -84,16 +84,23 @@ de verdade, de graça, e já está tudo configurado em `render.yaml` na raiz do 
 3. Selecione o repositório `site-da-comunidade-sinfonica`. O Render lê o `render.yaml`
    sozinho e já configura build, start command e uma `SECRET_KEY` segura automaticamente.
 4. Clique em **"Apply"** e espere o primeiro deploy terminar (alguns minutos).
-5. Acesse a URL que o Render deu (algo como `https://comunidade-sinfonica.onrender.com`),
-   crie sua conta normalmente pela tela de cadastro do site.
-6. Volte no painel do Render → **Environment** → adicione uma variável:
-   - `ADMIN_EMAIL` = o e-mail que você acabou de cadastrar
-   Isso salva e reinicia o serviço sozinho — depois disso sua conta já é admin.
+5. **Antes de cadastrar qualquer conta**, vá no painel do Render → **Environment** →
+   adicione a variável `ADMIN_EMAIL` com o(s) e-mail(s) de quem vai ser admin (separados
+   por vírgula, sem espaço, se for mais de um — ex: `voce@gmail.com,parceira@gmail.com`).
+   Salvar reinicia o serviço sozinho.
+6. **Só depois** disso, acesse a URL que o Render deu (algo como
+   `https://comunidade-sinfonica.onrender.com`) e cadastre as contas normalmente pela tela
+   de cadastro do site — cada uma nasce admin na hora, automaticamente.
 
-Pra ter **mais de um admin** (ex: você e sua parceira): a pessoa se cadastra normalmente
-pelo site publicado, e você edita a variável `ADMIN_EMAIL` no Render juntando os e-mails
-separados por vírgula, sem espaço — ex: `voce@gmail.com,parceira@gmail.com`. Salvar reinicia
-o serviço e promove todo mundo da lista.
+⚠️ **A ordem importa**: o cadastro precisa vir *depois* de configurar o `ADMIN_EMAIL`, nunca
+antes. Isso porque mudar uma variável de ambiente no Render dispara um novo deploy, e o
+deploy reseta o banco — uma conta cadastrada antes seria apagada nesse meio-tempo, antes de
+virar admin. Cadastrando depois, a conta já nasce admin na mesma hora, sem depender de
+nenhum reinício.
+
+Pra adicionar um admin novo mais tarde num site que já está no ar: edite o `ADMIN_EMAIL`
+incluindo o e-mail novo, salve (o serviço reinicia sozinho e o banco reseta), e só então a
+pessoa cadastra a conta dela.
 
 **Importante sobre o plano grátis do Render — leia antes de usar com gente de verdade:**
 - O serviço "dorme" depois de um tempo sem acesso; o primeiro acesso do dia demora uns

@@ -130,14 +130,22 @@ def init_db() -> None:
             pass
 
 
-def bootstrap_admin() -> None:
-    """Se a variável de ambiente ADMIN_EMAIL estiver definida, garante que
-    aqueles e-mails (se já cadastrados) sejam administradores. Aceita mais de
-    um e-mail separado por vírgula (ex: "a@x.com,b@y.com"). Existe pra dar pra
-    promover admins em serviços como o Render, onde não dá pra rodar
-    promover_admin.py direto no servidor."""
+def emails_admin_configurados() -> set[str]:
+    """Lê a variável de ambiente ADMIN_EMAIL (um ou mais e-mails separados por
+    vírgula, ex: "a@x.com,b@y.com") e devolve um conjunto em minúsculo."""
     emails_admin = os.environ.get("ADMIN_EMAIL", "")
-    emails = [email.strip().lower() for email in emails_admin.split(",") if email.strip()]
+    return {email.strip().lower() for email in emails_admin.split(",") if email.strip()}
+
+
+def bootstrap_admin() -> None:
+    """Promove quem já estiver cadastrado com um e-mail de ADMIN_EMAIL.
+    Serve de reforço pra contas que já existiam antes da variável ser
+    definida — mas o caminho principal é o registrar() já criar a conta como
+    admin na hora (veja abaixo), porque em serviços como o Render mudar uma
+    variável de ambiente dispara um novo deploy, e o deploy reseta o banco
+    ANTES desta função rodar — ou seja, uma conta cadastrada e só promovida
+    depois corre o risco de ser apagada nesse meio-tempo."""
+    emails = emails_admin_configurados()
     if not emails:
         return
     with get_db() as conn:
@@ -232,12 +240,15 @@ def registrar():
         return jsonify(ok=False, erro="A senha precisa ter pelo menos 6 caracteres."), 400
 
     senha_hash = generate_password_hash(senha)
+    # Se ADMIN_EMAIL já estiver configurado com esse e-mail, a conta nasce
+    # admin na hora — não depende de nenhum restart/promoção posterior.
+    é_admin = email in emails_admin_configurados()
 
     try:
         with get_db() as conn:
             cursor = conn.execute(
-                "INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)",
-                (nome, email, senha_hash),
+                "INSERT INTO usuarios (nome, email, senha_hash, admin) VALUES (?, ?, ?, ?)",
+                (nome, email, senha_hash, int(é_admin)),
             )
             usuario_id = cursor.lastrowid
     except sqlite3.IntegrityError:
@@ -247,7 +258,7 @@ def registrar():
     session["usuario_id"] = usuario_id
     session.permanent = False
 
-    return jsonify(ok=True, usuario={"id": usuario_id, "nome": nome, "email": email, "admin": False})
+    return jsonify(ok=True, usuario={"id": usuario_id, "nome": nome, "email": email, "admin": é_admin})
 
 
 @app.post("/api/login")
