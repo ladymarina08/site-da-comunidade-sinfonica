@@ -511,6 +511,47 @@ def criar_show():
     )
 
 
+@app.put("/api/shows/<int:show_id>")
+@requer_admin
+def editar_show(show_id):
+    dados = request.get_json(silent=True) or {}
+    banda = (dados.get("banda") or "").strip()
+    local = (dados.get("local") or "").strip()
+    cidade = (dados.get("cidade") or "").strip()
+    data = (dados.get("data") or "").strip()
+    horario = (dados.get("horario") or "").strip()
+    observacoes = (dados.get("observacoes") or "").strip()
+
+    if not banda or not local or not cidade:
+        return jsonify(ok=False, erro="Preencha banda, local e cidade."), 400
+    if not DATA_REGEX.match(data):
+        return jsonify(ok=False, erro="Data inválida."), 400
+    if horario and not HORA_REGEX.match(horario):
+        return jsonify(ok=False, erro="Horário inválido."), 400
+
+    with get_db() as conn:
+        cursor = conn.execute(
+            """UPDATE shows SET banda = ?, local = ?, cidade = ?, data = ?, horario = ?,
+               observacoes = ? WHERE id = ?""",
+            (banda, local, cidade, data, horario, observacoes, show_id),
+        )
+        if cursor.rowcount == 0:
+            return jsonify(ok=False, erro="Show não encontrado."), 404
+
+    return jsonify(
+        ok=True,
+        show={
+            "id": show_id,
+            "banda": banda,
+            "local": local,
+            "cidade": cidade,
+            "data": data,
+            "horario": horario,
+            "observacoes": observacoes,
+        },
+    )
+
+
 @app.delete("/api/shows/<int:show_id>")
 @requer_admin
 def excluir_show(show_id):
@@ -567,6 +608,40 @@ def criar_banda():
             (nome, genero, descricao, emoji, instagram, usuario["id"]),
         )
         banda_id = cursor.lastrowid
+
+    return jsonify(
+        ok=True,
+        banda={
+            "id": banda_id,
+            "nome": nome,
+            "genero": genero,
+            "descricao": descricao,
+            "emoji": emoji,
+            "instagram": instagram,
+        },
+    )
+
+
+@app.put("/api/bandas/<int:banda_id>")
+@requer_admin
+def editar_banda(banda_id):
+    dados = request.get_json(silent=True) or {}
+    nome = (dados.get("nome") or "").strip()
+    genero = (dados.get("genero") or "").strip()
+    descricao = (dados.get("descricao") or "").strip()
+    emoji = (dados.get("emoji") or "").strip() or "🎵"
+    instagram = normalizar_instagram(dados.get("instagram"))
+
+    if not nome or not genero:
+        return jsonify(ok=False, erro="Preencha nome e gênero."), 400
+
+    with get_db() as conn:
+        cursor = conn.execute(
+            "UPDATE bandas SET nome = ?, genero = ?, descricao = ?, emoji = ?, instagram = ? WHERE id = ?",
+            (nome, genero, descricao, emoji, instagram, banda_id),
+        )
+        if cursor.rowcount == 0:
+            return jsonify(ok=False, erro="Banda não encontrada."), 404
 
     return jsonify(
         ok=True,

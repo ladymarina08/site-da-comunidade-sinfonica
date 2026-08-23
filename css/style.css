@@ -747,6 +747,13 @@ main {
   margin-top: 18px;
 }
 
+.admin-form-acoes {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -778,6 +785,17 @@ main {
 
 .admin-list-item .info strong {
   color: var(--gold-soft);
+}
+
+.admin-list-acoes {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.admin-list-acoes .btn {
+  padding: 8px 18px;
+  font-size: 0.9rem;
 }
 
 .btn-danger {

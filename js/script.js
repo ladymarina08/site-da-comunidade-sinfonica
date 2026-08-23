@@ -355,10 +355,50 @@ async function carregarBandas() {
 }
 
 // ---------- Painel de administração (admin.html) ----------
+// Os formulários "Novo show" / "Nova banda" são reaproveitados pra edição:
+// clicar em "Editar" preenche os campos e troca o botão pra "Salvar
+// alterações" — ao enviar, faz PUT em vez de POST.
 
 const showForm = document.getElementById('showForm');
 const showMsg = document.getElementById('showMsg');
 const showsList = document.getElementById('showsList');
+const showSubmitBtn = document.getElementById('showSubmitBtn');
+const showCancelarEdicao = document.getElementById('showCancelarEdicao');
+const showFormTitulo = document.getElementById('showFormTitulo');
+
+let editandoShowId = null;
+
+function iniciarEdicaoShow(show) {
+  editandoShowId = show.id;
+  document.getElementById('showBanda').value = show.banda;
+  document.getElementById('showLocal').value = show.local;
+  document.getElementById('showCidade').value = show.cidade;
+  document.getElementById('showData').value = show.data;
+  document.getElementById('showHorario').value = show.horario || '';
+  document.getElementById('showObservacoes').value = show.observacoes || '';
+
+  showSubmitBtn.textContent = 'Salvar alterações';
+  showFormTitulo.textContent = 'Editar show';
+  showCancelarEdicao.hidden = false;
+  showMsg.classList.remove('show');
+  showForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelarEdicaoShow() {
+  editandoShowId = null;
+  showForm.reset();
+  showSubmitBtn.textContent = 'Adicionar show';
+  showFormTitulo.textContent = 'Novo show';
+  showCancelarEdicao.hidden = true;
+  showMsg.classList.remove('show');
+}
+
+if (showCancelarEdicao) {
+  showCancelarEdicao.addEventListener('click', (event) => {
+    event.preventDefault();
+    cancelarEdicaoShow();
+  });
+}
 
 function montarItemAdminShow(show) {
   const item = document.createElement('div');
@@ -375,17 +415,28 @@ function montarItemAdminShow(show) {
     info.append(` — ${show.observacoes}`);
   }
 
+  const acoes = document.createElement('div');
+  acoes.className = 'admin-list-acoes';
+
+  const editar = document.createElement('button');
+  editar.type = 'button';
+  editar.className = 'btn btn-outline';
+  editar.textContent = 'Editar';
+  editar.addEventListener('click', () => iniciarEdicaoShow(show));
+
   const excluir = document.createElement('button');
   excluir.type = 'button';
   excluir.className = 'btn btn-danger';
   excluir.textContent = 'Excluir';
   excluir.addEventListener('click', async () => {
     if (!confirm(`Excluir o show de "${show.banda}"?`)) return;
+    if (editandoShowId === show.id) cancelarEdicaoShow();
     await chamarApi(`/api/shows/${show.id}`, { method: 'DELETE' });
     carregarShowsAdmin();
   });
 
-  item.append(info, excluir);
+  acoes.append(editar, excluir);
+  item.append(info, acoes);
   return item;
 }
 
@@ -413,18 +464,19 @@ if (showForm) {
       observacoes: document.getElementById('showObservacoes').value,
     };
 
-    const { status, dados } = await chamarApi('/api/shows', {
-      method: 'POST',
-      body: JSON.stringify(corpo),
-    });
+    const editando = editandoShowId !== null;
+    const { status, dados } = await chamarApi(
+      editando ? `/api/shows/${editandoShowId}` : '/api/shows',
+      { method: editando ? 'PUT' : 'POST', body: JSON.stringify(corpo) }
+    );
 
     showMsg.classList.add('show');
     if (status === 200 && dados.ok) {
-      showForm.reset();
-      showMsg.textContent = 'Show adicionado à agenda!';
+      showMsg.textContent = editando ? 'Show atualizado!' : 'Show adicionado à agenda!';
+      cancelarEdicaoShow();
       carregarShowsAdmin();
     } else {
-      showMsg.textContent = dados.erro || 'Não foi possível adicionar o show.';
+      showMsg.textContent = dados.erro || 'Não foi possível salvar o show.';
     }
   });
 }
@@ -432,6 +484,42 @@ if (showForm) {
 const bandaForm = document.getElementById('bandaForm');
 const bandaMsg = document.getElementById('bandaMsg');
 const bandasList = document.getElementById('bandasList');
+const bandaSubmitBtn = document.getElementById('bandaSubmitBtn');
+const bandaCancelarEdicao = document.getElementById('bandaCancelarEdicao');
+const bandaFormTitulo = document.getElementById('bandaFormTitulo');
+
+let editandoBandaId = null;
+
+function iniciarEdicaoBanda(banda) {
+  editandoBandaId = banda.id;
+  document.getElementById('bandaNome').value = banda.nome;
+  document.getElementById('bandaGenero').value = banda.genero;
+  document.getElementById('bandaEmoji').value = banda.emoji || '';
+  document.getElementById('bandaInstagram').value = banda.instagram || '';
+  document.getElementById('bandaDescricao').value = banda.descricao || '';
+
+  bandaSubmitBtn.textContent = 'Salvar alterações';
+  bandaFormTitulo.textContent = 'Editar banda';
+  bandaCancelarEdicao.hidden = false;
+  bandaMsg.classList.remove('show');
+  bandaForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelarEdicaoBanda() {
+  editandoBandaId = null;
+  bandaForm.reset();
+  bandaSubmitBtn.textContent = 'Adicionar banda';
+  bandaFormTitulo.textContent = 'Nova banda';
+  bandaCancelarEdicao.hidden = true;
+  bandaMsg.classList.remove('show');
+}
+
+if (bandaCancelarEdicao) {
+  bandaCancelarEdicao.addEventListener('click', (event) => {
+    event.preventDefault();
+    cancelarEdicaoBanda();
+  });
+}
 
 function montarItemAdminBanda(banda) {
   const item = document.createElement('div');
@@ -444,17 +532,28 @@ function montarItemAdminBanda(banda) {
   info.appendChild(nomeForte);
   info.append(` — ${banda.genero}${banda.instagram ? ` • ${banda.instagram}` : ''}`);
 
+  const acoes = document.createElement('div');
+  acoes.className = 'admin-list-acoes';
+
+  const editar = document.createElement('button');
+  editar.type = 'button';
+  editar.className = 'btn btn-outline';
+  editar.textContent = 'Editar';
+  editar.addEventListener('click', () => iniciarEdicaoBanda(banda));
+
   const excluir = document.createElement('button');
   excluir.type = 'button';
   excluir.className = 'btn btn-danger';
   excluir.textContent = 'Excluir';
   excluir.addEventListener('click', async () => {
     if (!confirm(`Excluir a banda "${banda.nome}"?`)) return;
+    if (editandoBandaId === banda.id) cancelarEdicaoBanda();
     await chamarApi(`/api/bandas/${banda.id}`, { method: 'DELETE' });
     carregarBandasAdmin();
   });
 
-  item.append(info, excluir);
+  acoes.append(editar, excluir);
+  item.append(info, acoes);
   return item;
 }
 
@@ -481,18 +580,19 @@ if (bandaForm) {
       descricao: document.getElementById('bandaDescricao').value,
     };
 
-    const { status, dados } = await chamarApi('/api/bandas', {
-      method: 'POST',
-      body: JSON.stringify(corpo),
-    });
+    const editando = editandoBandaId !== null;
+    const { status, dados } = await chamarApi(
+      editando ? `/api/bandas/${editandoBandaId}` : '/api/bandas',
+      { method: editando ? 'PUT' : 'POST', body: JSON.stringify(corpo) }
+    );
 
     bandaMsg.classList.add('show');
     if (status === 200 && dados.ok) {
-      bandaForm.reset();
-      bandaMsg.textContent = 'Banda adicionada!';
+      bandaMsg.textContent = editando ? 'Banda atualizada!' : 'Banda adicionada!';
+      cancelarEdicaoBanda();
       carregarBandasAdmin();
     } else {
-      bandaMsg.textContent = dados.erro || 'Não foi possível adicionar a banda.';
+      bandaMsg.textContent = dados.erro || 'Não foi possível salvar a banda.';
     }
   });
 }

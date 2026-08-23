@@ -37,7 +37,7 @@
     </section>
 
     <section class="admin-section">
-      <h2>Novo show</h2>
+      <h2 id="showFormTitulo">Novo show</h2>
       <form class="admin-form" id="showForm">
         <div class="form-grid">
           <div>
@@ -63,7 +63,10 @@
         </div>
         <label for="showObservacoes">Observações (opcional)</label>
         <textarea id="showObservacoes" rows="2" placeholder="Ex: nome do evento, endereço completo, avisos..."></textarea>
-        <button type="submit" class="btn btn-primary">Adicionar show</button>
+        <div class="admin-form-acoes">
+          <button type="submit" class="btn btn-primary" id="showSubmitBtn">Adicionar show</button>
+          <a href="#" class="link-muted" id="showCancelarEdicao" hidden>Cancelar edição</a>
+        </div>
         <p class="form-message" id="showMsg" role="status"></p>
       </form>
 
@@ -73,7 +76,7 @@
     </section>
 
     <section class="admin-section">
-      <h2>Nova banda</h2>
+      <h2 id="bandaFormTitulo">Nova banda</h2>
       <form class="admin-form" id="bandaForm">
         <div class="form-grid">
           <div>
@@ -95,7 +98,10 @@
         </div>
         <label for="bandaDescricao">Descrição</label>
         <textarea id="bandaDescricao" rows="2" placeholder="Breve descrição da banda"></textarea>
-        <button type="submit" class="btn btn-primary">Adicionar banda</button>
+        <div class="admin-form-acoes">
+          <button type="submit" class="btn btn-primary" id="bandaSubmitBtn">Adicionar banda</button>
+          <a href="#" class="link-muted" id="bandaCancelarEdicao" hidden>Cancelar edição</a>
+        </div>
         <p class="form-message" id="bandaMsg" role="status"></p>
       </form>
 

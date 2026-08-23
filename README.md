@@ -161,9 +161,9 @@ python promover_admin.py --listar
 ## Pendências para você completar
 
 1. **Texto "Sobre"**: ajuste o texto de apresentação da comunidade em `sobre.html` como preferir.
-2. **Editar show/banda existente**: hoje o painel só cadastra e exclui — pra corrigir algo é excluir e cadastrar de novo. Editar in-line é uma evolução futura simples de adicionar.
 
 Redes sociais (Instagram e WhatsApp) já configuradas em `sobre.html` com os links reais.
+Editar show/banda existente já funciona no painel admin — clique em "Editar" no item da lista.
 
 ## Design
 
