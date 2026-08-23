@@ -9,14 +9,26 @@ Site (HTML + CSS + JS puro no front, backend em Python/Flask) para a Comunidade 
 - `esqueci-senha.html` — Pedir link de redefinição de senha por e-mail
 - `redefinir-senha.html` — Criar senha nova (acessada pelo link do e-mail)
 - `inicio.html` — Página inicial / hub (**exige login**) — pra onde o login e o cadastro
-  redirecionam; reúne links pra Agenda, Bandas, Sobre, e (em breve) Meu Perfil e Playlists
+  redirecionam; reúne links pra Agenda, Bandas, Playlists, Sobre, e (em breve) Meu Perfil
 - `agenda.html` — Agenda de shows (**exige login**, dados vêm do backend)
 - `bandas.html` — Bandas da comunidade (**exige login**, dados vêm do backend)
+- `playlists.html` — Playlists da comunidade, embeds do Spotify (**exige login**)
 - `sobre.html` — Sobre a comunidade + redes sociais (**exige login**)
 - `admin.html` — Painel para cadastrar/excluir shows e bandas (**exige ser admin**)
 
-**Ainda não construídas** (os cards já existem em `inicio.html`, marcados "Em breve"):
-`perfil.html` (Meu Perfil) e `playlists.html` (Playlists).
+**Ainda não construída** (o card já existe em `inicio.html`, marcado "Em breve"):
+`perfil.html` (Meu Perfil).
+
+## Como adicionar/trocar uma playlist do Spotify
+
+Em `playlists.html`, cada playlist é um bloco `<article class="playlist-card">` com um
+título e um `<iframe>`. Pra adicionar outra:
+
+1. No Spotify, abra a playlist → **"..." → Compartilhar → Copiar link da playlist**
+2. Pegue o código que fica entre `/playlist/` e o `?` do link (ex: em
+   `open.spotify.com/playlist/3pLmy5XivlVbKUmHB0QrOE?si=...`, o código é `3pLmy5XivlVbKUmHB0QrOE`)
+3. Copie um bloco `<article class="playlist-card">...</article>` inteiro, troque o título e
+   o `src` do iframe pra `https://open.spotify.com/embed/playlist/CÓDIGO?utm_source=generator&theme=0`
 
 ## Como rodar
 

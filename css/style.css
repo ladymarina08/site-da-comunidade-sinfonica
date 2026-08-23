@@ -882,6 +882,35 @@ a.hub-card:hover {
   text-transform: uppercase;
 }
 
+/* ---------- Playlists (embed do Spotify) ---------- */
+
+.playlists-grid {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 10px 20px 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.playlist-card {
+  background: linear-gradient(160deg, var(--black-3), var(--black-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.playlist-card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 14px;
+}
+
+.playlist-card iframe {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+}
+
 /* ---------- Sobre ---------- */
 
 .about-text {

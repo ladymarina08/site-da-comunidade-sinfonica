@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Agenda de Shows — Comunidade Sinfônica</title>
-  <meta name="description" content="Confira os próximos shows da Comunidade Sinfônica." />
+  <title>Playlists — Comunidade Sinfônica</title>
+  <meta name="description" content="Ouça as playlists da Comunidade Sinfônica." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230a0505' stroke='%23d4af37' stroke-width='3'/%3E%3Ctext x='32' y='43' font-size='30' text-anchor='middle' fill='%23d4af37'%3E%E2%99%AA%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,9 +21,9 @@
       <nav class="main-nav" id="mainNav">
         <span class="nav-greeting" id="userGreeting"></span>
         <a href="inicio.html">Início</a>
-        <a href="agenda.html" aria-current="page">Agenda</a>
+        <a href="agenda.html">Agenda</a>
         <a href="bandas.html">Bandas</a>
-        <a href="playlists.html">Playlists</a>
+        <a href="playlists.html" aria-current="page">Playlists</a>
         <a href="sobre.html">Sobre</a>
         <a href="admin.html" class="nav-admin" id="adminLink">Admin</a>
         <a href="index.html" class="nav-logout" id="logoutLink">Sair</a>
@@ -33,14 +33,31 @@
 
   <main>
     <section class="page-hero container">
-      <h1>Agenda de Shows</h1>
-      <p>Confira os próximos encontros da comunidade — sinfônico e metal juntos no palco.</p>
+      <h1>Playlists</h1>
+      <p>Ouça o som da comunidade — direto do Spotify.</p>
     </section>
 
-    <!-- Os shows são carregados do backend (js/script.js -> carregarAgenda()). -->
-    <!-- Para cadastrar shows novos, entre como admin e use admin.html. -->
-    <section class="shows-grid" id="showsGrid">
-      <p class="empty-state">Carregando agenda...</p>
+    <!--
+      TODO Marina: pra adicionar outra playlist, copie um bloco
+      <article class="playlist-card">...</article> por inteiro e troque o
+      título e o "src" do iframe (pegue o link no Spotify em "Compartilhar
+      → Copiar link da playlist", extraia o código depois de "/playlist/"
+      e antes do "?", e monte: https://open.spotify.com/embed/playlist/CÓDIGO
+    -->
+    <section class="playlists-grid">
+      <article class="playlist-card">
+        <h2>Autorais da Comunidade</h2>
+        <iframe
+          src="https://open.spotify.com/embed/playlist/3pLmy5XivlVbKUmHB0QrOE?utm_source=generator&theme=0"
+          width="100%"
+          height="352"
+          frameborder="0"
+          allowfullscreen=""
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+          title="Playlist Spotify — Autorais da Comunidade"
+        ></iframe>
+      </article>
     </section>
   </main>
 
