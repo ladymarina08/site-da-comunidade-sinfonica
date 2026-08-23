@@ -160,9 +160,10 @@ python promover_admin.py --listar
 
 ## Pendências para você completar
 
-1. **Redes sociais**: em `sobre.html`, troque os `href="#"` dos cards de rede social pelos links reais (Instagram, WhatsApp, YouTube, TikTok, Facebook).
-2. **Texto "Sobre"**: ajuste o texto de apresentação da comunidade em `sobre.html` como preferir.
-3. **Editar show/banda existente**: hoje o painel só cadastra e exclui — pra corrigir algo é excluir e cadastrar de novo. Editar in-line é uma evolução futura simples de adicionar.
+1. **Texto "Sobre"**: ajuste o texto de apresentação da comunidade em `sobre.html` como preferir.
+2. **Editar show/banda existente**: hoje o painel só cadastra e exclui — pra corrigir algo é excluir e cadastrar de novo. Editar in-line é uma evolução futura simples de adicionar.
+
+Redes sociais (Instagram e WhatsApp) já configuradas em `sobre.html` com os links reais.
 
 ## Design
 
