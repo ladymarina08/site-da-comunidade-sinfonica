@@ -14,3 +14,7 @@ services:
         generateValue: true
       - key: DATA_DIR
         value: /var/data
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false

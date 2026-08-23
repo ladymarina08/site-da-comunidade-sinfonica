@@ -355,6 +355,44 @@ p {
   box-shadow: 0 0 0 3px var(--gold-glow);
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input[type="password"],
+.password-field input[type="text"] {
+  padding-right: 46px;
+}
+
+.toggle-senha {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.toggle-senha:hover {
+  color: var(--gold);
+}
+
+.toggle-senha svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* o atributo "hidden" nem sempre esconde <svg> sozinho em todo navegador */
+.toggle-senha svg[hidden] {
+  display: none;
+}
+
 .form-row {
   display: flex;
   align-items: center;

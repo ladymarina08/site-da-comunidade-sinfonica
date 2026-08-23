@@ -6,6 +6,8 @@ Site (HTML + CSS + JS puro no front, backend em Python/Flask) para a Comunidade 
 
 - `index.html` — Login (tela inicial)
 - `cadastro.html` — Criar conta
+- `esqueci-senha.html` — Pedir link de redefinição de senha por e-mail
+- `redefinir-senha.html` — Criar senha nova (acessada pelo link do e-mail)
 - `agenda.html` — Agenda de shows (**exige login**, dados vêm do backend)
 - `bandas.html` — Bandas da comunidade (**exige login**, dados vêm do backend)
 - `sobre.html` — Sobre a comunidade + redes sociais (**exige login**)
@@ -43,6 +45,30 @@ Se estiver usando o Claude Code, também dá pra abrir pelo preview com o nome
   `backend/secret.key` (também não versionada).
 - `agenda.html`, `bandas.html`, `sobre.html` e `admin.html` verificam a sessão ao carregar
   (`js/script.js`) e redirecionam pra `index.html` se não houver login.
+
+## Como funciona "esqueci minha senha"
+
+1. A pessoa pede o link em `esqueci-senha.html`, informando o e-mail.
+2. O backend gera um token aleatório (válido por 1 hora), salva na tabela
+   `redefinicoes_senha`, e envia um e-mail com o link via **Brevo** (brevo.com — envio de
+   e-mail transacional, plano grátis).
+3. A pessoa clica no link (`redefinir-senha.html?token=...`), define a senha nova, e o token
+   é marcado como usado (não dá pra reaproveitar).
+4. Por segurança, a resposta da API é sempre a mesma mensagem genérica, exista ou não aquele
+   e-mail cadastrado — assim ninguém descobre quais e-mails têm conta só tentando um por um.
+
+**Configuração do envio de e-mail:**
+
+- `BREVO_API_KEY` e `BREVO_SENDER_EMAIL` (variáveis de ambiente) — sem elas, o link não é
+  enviado de verdade: em desenvolvimento local, o link aparece no terminal onde o
+  `python app.py` está rodando (mais fácil de testar sem precisar de conta em lugar nenhum).
+- Pra configurar de verdade (produção):
+  1. Crie uma conta grátis em [brevo.com](https://brevo.com) (sem cartão de crédito).
+  2. Em **Senders** (remetentes), adicione o e-mail que vai aparecer como remetente (ex: seu
+     Gmail) e confirme com o código de 6 dígitos que o Brevo manda pra ele.
+  3. Em **SMTP & API → API Keys**, gere uma chave nova.
+  4. No Render → **Environment**, adicione `BREVO_API_KEY` (a chave) e `BREVO_SENDER_EMAIL`
+     (o e-mail que você verificou no passo 2).
 
 ## Como promover alguém a administrador(a)
 
@@ -136,8 +162,7 @@ python promover_admin.py --listar
 
 1. **Redes sociais**: em `sobre.html`, troque os `href="#"` dos cards de rede social pelos links reais (Instagram, WhatsApp, YouTube, TikTok, Facebook).
 2. **Texto "Sobre"**: ajuste o texto de apresentação da comunidade em `sobre.html` como preferir.
-3. **"Esqueceu a senha?"**: o link existe em `index.html` mas ainda não tem funcionalidade (recuperação de senha por e-mail fica pra uma próxima etapa).
-4. **Editar show/banda existente**: hoje o painel só cadastra e exclui — pra corrigir algo é excluir e cadastrar de novo. Editar in-line é uma evolução futura simples de adicionar.
+3. **Editar show/banda existente**: hoje o painel só cadastra e exclui — pra corrigir algo é excluir e cadastrar de novo. Editar in-line é uma evolução futura simples de adicionar.
 
 ## Design
 

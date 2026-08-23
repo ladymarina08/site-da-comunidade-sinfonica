@@ -23,6 +23,32 @@ if (menuToggle && mainNav) {
   });
 }
 
+// ---------- Botão de mostrar/ocultar senha (index.html e cadastro.html) ----------
+
+document.querySelectorAll('.toggle-senha').forEach((botao) => {
+  botao.addEventListener('click', () => {
+    const campo = document.getElementById(botao.dataset.target);
+    if (!campo) return;
+
+    const olhoAberto = botao.querySelector('.icone-olho-aberto');
+    const olhoFechado = botao.querySelector('.icone-olho-fechado');
+    const estaOculta = campo.type === 'password';
+
+    campo.type = estaOculta ? 'text' : 'password';
+    // usa setAttribute/removeAttribute em vez de ".hidden = " porque a
+    // propriedade "hidden" não reflete de forma confiável em <svg> em todo
+    // navegador — o atributo direto funciona sempre.
+    if (estaOculta) {
+      olhoAberto.setAttribute('hidden', '');
+      olhoFechado.removeAttribute('hidden');
+    } else {
+      olhoAberto.removeAttribute('hidden');
+      olhoFechado.setAttribute('hidden', '');
+    }
+    botao.setAttribute('aria-label', estaOculta ? 'Ocultar senha' : 'Mostrar senha');
+  });
+});
+
 // ---------- Helper para chamar a API do backend (backend/app.py) ----------
 
 async function chamarApi(caminho, opcoes = {}) {
@@ -98,6 +124,86 @@ if (cadastroForm && cadastroMsg) {
       window.location.href = 'agenda.html';
     } else {
       cadastroMsg.textContent = dados.erro || 'Não foi possível criar a conta.';
+    }
+  });
+}
+
+// ---------- Esqueci minha senha (esqueci-senha.html) ----------
+
+const esqueciSenhaForm = document.getElementById('esqueciSenhaForm');
+const esqueciSenhaMsg = document.getElementById('esqueciSenhaMsg');
+
+if (esqueciSenhaForm && esqueciSenhaMsg) {
+  esqueciSenhaForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById('email').value;
+    esqueciSenhaMsg.textContent = 'Enviando...';
+    esqueciSenhaMsg.classList.add('show');
+
+    const { status, dados } = await chamarApi('/api/esqueci-senha', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+
+    if (status === 200 && dados.ok) {
+      esqueciSenhaForm.reset();
+      esqueciSenhaMsg.textContent = dados.mensagem;
+    } else {
+      esqueciSenhaMsg.textContent = 'Não foi possível processar o pedido. Tente novamente.';
+    }
+  });
+}
+
+// ---------- Redefinir senha (redefinir-senha.html) ----------
+
+const redefinirSenhaForm = document.getElementById('redefinirSenhaForm');
+const redefinirSenhaMsg = document.getElementById('redefinirSenhaMsg');
+
+if (redefinirSenhaForm && redefinirSenhaMsg) {
+  const tokenRedefinicao = new URLSearchParams(window.location.search).get('token') || '';
+
+  // Confere se o link ainda é válido assim que a página carrega, pra avisar
+  // logo em vez de só depois que a pessoa preencher tudo.
+  chamarApi(`/api/validar-token-redefinicao?token=${encodeURIComponent(tokenRedefinicao)}`).then(
+    ({ dados }) => {
+      if (!dados.valido) {
+        redefinirSenhaMsg.textContent = 'Esse link é inválido ou já expirou. Peça um novo em "Esqueceu a senha?".';
+        redefinirSenhaMsg.classList.add('show');
+        redefinirSenhaForm.querySelectorAll('input, button').forEach((el) => {
+          el.disabled = true;
+        });
+      }
+    }
+  );
+
+  redefinirSenhaForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const senha = document.getElementById('senha').value;
+    const confirmarSenha = document.getElementById('confirmarSenha').value;
+
+    if (senha !== confirmarSenha) {
+      redefinirSenhaMsg.textContent = 'As senhas não coincidem.';
+      redefinirSenhaMsg.classList.add('show');
+      return;
+    }
+
+    redefinirSenhaMsg.textContent = 'Salvando...';
+    redefinirSenhaMsg.classList.add('show');
+
+    const { status, dados } = await chamarApi('/api/redefinir-senha', {
+      method: 'POST',
+      body: JSON.stringify({ token: tokenRedefinicao, senha }),
+    });
+
+    if (status === 200 && dados.ok) {
+      redefinirSenhaMsg.textContent = 'Senha redefinida! Redirecionando pro login...';
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
+    } else {
+      redefinirSenhaMsg.textContent = dados.erro || 'Não foi possível redefinir a senha.';
     }
   });
 }

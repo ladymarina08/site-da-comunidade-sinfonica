@@ -13,11 +13,13 @@ Como rodar:
 O site fica disponível em http://localhost:5000
 """
 
+import json
 import os
 import re
 import secrets
 import sqlite3
-from datetime import timedelta
+import urllib.request
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
 
@@ -35,6 +37,11 @@ SECRET_KEY_PATH = BACKEND_DIR / "secret.key"
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 DATA_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}$")  # AAAA-MM-DD
 HORA_REGEX = re.compile(r"^\d{2}:\d{2}$")  # HH:MM
+
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "").strip()
+BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL", "").strip()
+BREVO_SENDER_NOME = "Comunidade Sinfônica"
+VALIDADE_TOKEN_REDEFINICAO = timedelta(hours=1)
 
 
 def carregar_secret_key() -> str:
@@ -123,6 +130,20 @@ def init_db() -> None:
         except sqlite3.OperationalError:
             pass
 
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS redefinicoes_senha (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_id INTEGER NOT NULL,
+                token TEXT NOT NULL UNIQUE,
+                expira_em TEXT NOT NULL,
+                usado INTEGER NOT NULL DEFAULT 0,
+                criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+            )
+            """
+        )
+
 
 def emails_admin_configurados() -> set[str]:
     """Lê a variável de ambiente ADMIN_EMAIL (um ou mais e-mails separados por
@@ -166,6 +187,45 @@ def seed_inicial() -> None:
                     "INSERT INTO shows (banda, local, cidade, data, horario, observacoes) VALUES (?, ?, ?, ?, ?, ?)",
                     (banda, local, cidade, data, horario, observacoes),
                 )
+
+
+def enviar_email(destinatario: str, assunto: str, html: str) -> bool:
+    """Envia um e-mail via API do Brevo (brevo.com). Se BREVO_API_KEY não
+    estiver configurada (ex: desenvolvimento local), não envia de verdade —
+    só imprime no console, pra dar pra testar sem precisar de conta lá.
+    Retorna True se enviou (ou simulou) com sucesso, False se deu erro."""
+    if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
+        print(f"[email simulado] Para: {destinatario} | Assunto: {assunto}\n{html}")
+        return True
+
+    corpo = json.dumps(
+        {
+            "sender": {"email": BREVO_SENDER_EMAIL, "name": BREVO_SENDER_NOME},
+            "to": [{"email": destinatario}],
+            "subject": assunto,
+            "htmlContent": html,
+        }
+    ).encode("utf-8")
+
+    requisicao = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=corpo,
+        method="POST",
+        headers={
+            "api-key": BREVO_API_KEY,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+    )
+
+    try:
+        # timeout curto pra nunca travar a requisição do usuário esperando o
+        # Brevo responder (mesma lição aprendida com o Turso)
+        with urllib.request.urlopen(requisicao, timeout=10):
+            return True
+    except Exception as erro:  # não deixa o cadastro/login quebrar por causa do e-mail
+        print(f"[erro ao enviar e-mail via Brevo] {erro}")
+        return False
 
 
 # Roda sempre que o módulo é carregado — seja com "python app.py" (dev local)
@@ -306,6 +366,94 @@ def eu():
             "admin": bool(usuario["admin"]),
         },
     )
+
+
+def _token_ainda_valido(expira_em_iso: str) -> bool:
+    try:
+        expira_em = datetime.fromisoformat(expira_em_iso)
+    except ValueError:
+        return False
+    return datetime.now(timezone.utc) < expira_em
+
+
+@app.post("/api/esqueci-senha")
+def esqueci_senha():
+    dados = request.get_json(silent=True) or {}
+    email = (dados.get("email") or "").strip().lower()
+
+    # Sempre devolve a mesma mensagem, exista ou não a conta — evita que
+    # alguém descubra quais e-mails estão cadastrados tentando um por um.
+    mensagem_padrao = "Se esse e-mail estiver cadastrado, você vai receber um link de redefinição em instantes."
+
+    if not EMAIL_REGEX.match(email):
+        return jsonify(ok=True, mensagem=mensagem_padrao)
+
+    with get_db() as conn:
+        usuario = conn.execute("SELECT id, nome FROM usuarios WHERE email = ?", (email,)).fetchone()
+
+        if usuario:
+            token = secrets.token_urlsafe(32)
+            expira_em = (datetime.now(timezone.utc) + VALIDADE_TOKEN_REDEFINICAO).isoformat()
+            conn.execute(
+                "INSERT INTO redefinicoes_senha (usuario_id, token, expira_em) VALUES (?, ?, ?)",
+                (usuario["id"], token, expira_em),
+            )
+
+            link = f"{request.url_root.rstrip('/')}/redefinir-senha.html?token={token}"
+            html = f"""
+                <div style="font-family: Georgia, serif; background:#0a0505; color:#f4ede4; padding:32px;">
+                  <h1 style="color:#d4af37; font-size:22px; margin:0 0 16px;">Comunidade Sinfônica</h1>
+                  <p>Olá, {usuario['nome']}!</p>
+                  <p>Recebemos um pedido pra redefinir sua senha. Clique no link abaixo (válido por 1 hora):</p>
+                  <p><a href="{link}" style="color:#d4af37;">Redefinir minha senha</a></p>
+                  <p style="color:#cbb4b4; font-size:13px;">Se você não pediu isso, pode ignorar esse e-mail com tranquilidade — sua senha continua a mesma.</p>
+                </div>
+            """
+            enviar_email(email, "Redefinir sua senha — Comunidade Sinfônica", html)
+
+    return jsonify(ok=True, mensagem=mensagem_padrao)
+
+
+@app.get("/api/validar-token-redefinicao")
+def validar_token_redefinicao():
+    token = (request.args.get("token") or "").strip()
+    if not token:
+        return jsonify(ok=True, valido=False)
+
+    with get_db() as conn:
+        registro = conn.execute(
+            "SELECT expira_em, usado FROM redefinicoes_senha WHERE token = ?", (token,)
+        ).fetchone()
+
+    valido = bool(registro) and not registro["usado"] and _token_ainda_valido(registro["expira_em"])
+    return jsonify(ok=True, valido=valido)
+
+
+@app.post("/api/redefinir-senha")
+def redefinir_senha():
+    dados = request.get_json(silent=True) or {}
+    token = (dados.get("token") or "").strip()
+    senha = dados.get("senha") or ""
+
+    if len(senha) < 6:
+        return jsonify(ok=False, erro="A senha precisa ter pelo menos 6 caracteres."), 400
+
+    with get_db() as conn:
+        registro = conn.execute(
+            "SELECT id, usuario_id, expira_em, usado FROM redefinicoes_senha WHERE token = ?",
+            (token,),
+        ).fetchone()
+
+        if not registro or registro["usado"] or not _token_ainda_valido(registro["expira_em"]):
+            return jsonify(ok=False, erro="Link inválido ou expirado. Peça um novo."), 400
+
+        senha_hash = generate_password_hash(senha)
+        conn.execute(
+            "UPDATE usuarios SET senha_hash = ? WHERE id = ?", (senha_hash, registro["usuario_id"])
+        )
+        conn.execute("UPDATE redefinicoes_senha SET usado = 1 WHERE id = ?", (registro["id"],))
+
+    return jsonify(ok=True)
 
 
 # =====================================================

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login — Comunidade Sinfônica</title>
-  <meta name="description" content="Entre na Comunidade Sinfônica: agenda de shows, bandas e muito mais." />
+  <title>Redefinir senha — Comunidade Sinfônica</title>
+  <meta name="description" content="Crie uma nova senha pra sua conta da Comunidade Sinfônica." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230a0505' stroke='%23d4af37' stroke-width='3'/%3E%3Ctext x='32' y='43' font-size='30' text-anchor='middle' fill='%23d4af37'%3E%E2%99%AA%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,42 +17,33 @@
       <div class="brand">
         <span class="brand-symbol">✦</span>
         <h1 class="brand-title">Comunidade Sinfônica</h1>
-        <p class="brand-subtitle">Onde o metal encontra a orquestra</p>
+        <p class="brand-subtitle">Criar uma senha nova</p>
       </div>
 
-      <!-- Login conectado ao backend em backend/app.py (rota /api/login) -->
-      <form class="login-form" id="loginForm">
-        <label for="email">E-mail</label>
-        <input type="email" id="email" name="email" placeholder="seu@email.com" required />
-
-        <label for="senha">Senha</label>
+      <form class="login-form" id="redefinirSenhaForm">
+        <label for="senha">Nova senha</label>
         <div class="password-field">
-          <input type="password" id="senha" name="senha" placeholder="••••••••" required />
+          <input type="password" id="senha" name="senha" placeholder="Mínimo 6 caracteres" minlength="6" required />
           <button type="button" class="toggle-senha" data-target="senha" aria-label="Mostrar senha">
             <svg class="icone-olho-aberto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
             <svg class="icone-olho-fechado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.87 20.87 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a20.87 20.87 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
           </button>
         </div>
 
-        <div class="form-row">
-          <label class="checkbox">
-            <input type="checkbox" name="lembrar" />
-            Lembrar de mim
-          </label>
-          <a href="esqueci-senha.html" class="link-muted">Esqueceu a senha?</a>
+        <label for="confirmarSenha">Confirmar nova senha</label>
+        <div class="password-field">
+          <input type="password" id="confirmarSenha" name="confirmarSenha" placeholder="Repita a senha" minlength="6" required />
+          <button type="button" class="toggle-senha" data-target="confirmarSenha" aria-label="Mostrar senha">
+            <svg class="icone-olho-aberto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+            <svg class="icone-olho-fechado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.87 20.87 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a20.87 20.87 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+          </button>
         </div>
 
-        <button type="submit" class="btn btn-primary">Entrar</button>
-        <p class="form-message" id="loginMsg" role="status"></p>
+        <button type="submit" class="btn btn-primary">Salvar nova senha</button>
+        <p class="form-message" id="redefinirSenhaMsg" role="status"></p>
       </form>
 
-      <p class="signup-hint">Ainda não faz parte? <a href="cadastro.html" class="link-gold">Cadastre-se</a></p>
-
-      <nav class="login-links">
-        <a href="agenda.html">Ver agenda</a>
-        <a href="bandas.html">Bandas</a>
-        <a href="sobre.html">Sobre a comunidade</a>
-      </nav>
+      <p class="signup-hint"><a href="index.html" class="link-gold">← Voltar pro login</a></p>
     </div>
   </div>
 
