@@ -160,10 +160,10 @@ python promover_admin.py --listar
 
 ## Pendências para você completar
 
-1. **Texto "Sobre"**: ajuste o texto de apresentação da comunidade em `sobre.html` como preferir.
-
-Redes sociais (Instagram e WhatsApp) já configuradas em `sobre.html` com os links reais.
-Editar show/banda existente já funciona no painel admin — clique em "Editar" no item da lista.
+Sem pendências abertas no momento — as próximas ficam a seu critério. Pra referência do que
+já foi feito: redes sociais reais em `sobre.html`, texto de apresentação da comunidade (com
+visual de pergaminho), e edição de show/banda no painel admin (clique em "Editar" no item da
+lista).
 
 ## Design
 
