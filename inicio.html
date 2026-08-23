@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bandas da Comunidade — Comunidade Sinfônica</title>
-  <meta name="description" content="Conheça as bandas que formam a Comunidade Sinfônica." />
+  <title>Início — Comunidade Sinfônica</title>
+  <meta name="description" content="Página inicial da Comunidade Sinfônica." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230a0505' stroke='%23d4af37' stroke-width='3'/%3E%3Ctext x='32' y='43' font-size='30' text-anchor='middle' fill='%23d4af37'%3E%E2%99%AA%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,9 +20,9 @@
       </button>
       <nav class="main-nav" id="mainNav">
         <span class="nav-greeting" id="userGreeting"></span>
-        <a href="inicio.html">Início</a>
+        <a href="inicio.html" aria-current="page">Início</a>
         <a href="agenda.html">Agenda</a>
-        <a href="bandas.html" aria-current="page">Bandas</a>
+        <a href="bandas.html">Bandas</a>
         <a href="sobre.html">Sobre</a>
         <a href="admin.html" class="nav-admin" id="adminLink">Admin</a>
         <a href="index.html" class="nav-logout" id="logoutLink">Sair</a>
@@ -32,14 +32,43 @@
 
   <main>
     <section class="page-hero container">
-      <h1>Bandas da Comunidade</h1>
-      <p>Conheça os projetos que formam a Comunidade Sinfônica.</p>
+      <h1>Bem-vindo(a) à Comunidade Sinfônica</h1>
+      <p>Escolha por onde quer começar.</p>
     </section>
 
-    <!-- As bandas são carregadas do backend (js/script.js -> carregarBandas()). -->
-    <!-- Para cadastrar bandas novas, entre como admin e use admin.html. -->
-    <section class="bands-grid" id="bandsGrid">
-      <p class="empty-state">Carregando bandas...</p>
+    <!-- TODO Marina: quando "Meu Perfil" e "Playlists" forem construídos,
+         troque esses dois <div class="hub-card hub-card-em-breve"> por
+         <a href="perfil.html" class="hub-card">/<a href="playlists.html" class="hub-card"> -->
+    <section class="hub-grid">
+      <div class="hub-card hub-card-em-breve">
+        <span class="hub-card-icon">👤</span>
+        <h2>Meu Perfil</h2>
+        <span class="hub-card-badge">Em breve</span>
+      </div>
+
+      <a href="agenda.html" class="hub-card">
+        <span class="hub-card-icon">📅</span>
+        <h2>Agenda</h2>
+        <p>Próximos shows da comunidade</p>
+      </a>
+
+      <a href="bandas.html" class="hub-card">
+        <span class="hub-card-icon">🎻</span>
+        <h2>Bandas</h2>
+        <p>Conheça os projetos da cena</p>
+      </a>
+
+      <a href="sobre.html" class="hub-card">
+        <span class="hub-card-icon">📜</span>
+        <h2>Sobre</h2>
+        <p>A história da comunidade</p>
+      </a>
+
+      <div class="hub-card hub-card-em-breve">
+        <span class="hub-card-icon">🎵</span>
+        <h2>Playlists</h2>
+        <span class="hub-card-badge">Em breve</span>
+      </div>
     </section>
   </main>
 

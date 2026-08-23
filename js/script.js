@@ -85,7 +85,7 @@ if (loginForm && loginMsg) {
     });
 
     if (status === 200 && dados.ok) {
-      window.location.href = 'agenda.html';
+      window.location.href = 'inicio.html';
     } else {
       loginMsg.textContent = dados.erro || 'Não foi possível entrar. Tente novamente.';
     }
@@ -121,7 +121,7 @@ if (cadastroForm && cadastroMsg) {
     });
 
     if (status === 200 && dados.ok) {
-      window.location.href = 'agenda.html';
+      window.location.href = 'inicio.html';
     } else {
       cadastroMsg.textContent = dados.erro || 'Não foi possível criar a conta.';
     }
@@ -622,7 +622,7 @@ if (mainNav) {
 
     const paginaExigeAdmin = document.body.hasAttribute('data-admin-only');
     if (paginaExigeAdmin && !usuario.admin) {
-      window.location.href = 'agenda.html';
+      window.location.href = 'inicio.html';
       return;
     }
 

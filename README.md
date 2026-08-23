@@ -8,10 +8,15 @@ Site (HTML + CSS + JS puro no front, backend em Python/Flask) para a Comunidade 
 - `cadastro.html` — Criar conta
 - `esqueci-senha.html` — Pedir link de redefinição de senha por e-mail
 - `redefinir-senha.html` — Criar senha nova (acessada pelo link do e-mail)
+- `inicio.html` — Página inicial / hub (**exige login**) — pra onde o login e o cadastro
+  redirecionam; reúne links pra Agenda, Bandas, Sobre, e (em breve) Meu Perfil e Playlists
 - `agenda.html` — Agenda de shows (**exige login**, dados vêm do backend)
 - `bandas.html` — Bandas da comunidade (**exige login**, dados vêm do backend)
 - `sobre.html` — Sobre a comunidade + redes sociais (**exige login**)
 - `admin.html` — Painel para cadastrar/excluir shows e bandas (**exige ser admin**)
+
+**Ainda não construídas** (os cards já existem em `inicio.html`, marcados "Em breve"):
+`perfil.html` (Meu Perfil) e `playlists.html` (Playlists).
 
 ## Como rodar
 

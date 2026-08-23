@@ -818,6 +818,70 @@ main {
   padding: 20px;
 }
 
+/* ---------- Início (hub de navegação) ---------- */
+
+.hub-grid {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 10px 20px 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.hub-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  background: linear-gradient(160deg, var(--black-3), var(--black-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 34px 20px;
+  color: var(--white);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+a.hub-card:hover {
+  box-shadow: 0 0 24px var(--red-glow);
+  transform: translateY(-3px);
+  border-color: var(--gold);
+}
+
+.hub-card-icon {
+  font-size: 2.2rem;
+}
+
+.hub-card h2 {
+  margin: 4px 0 0;
+  font-size: 1.3rem;
+}
+
+.hub-card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.hub-card-em-breve {
+  opacity: 0.55;
+  border-style: dashed;
+  cursor: default;
+}
+
+.hub-card-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 /* ---------- Sobre ---------- */
 
 .about-text {
