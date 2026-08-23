@@ -301,6 +301,75 @@ p {
   text-shadow: 0 0 12px var(--gold-glow);
 }
 
+.bat-icon-2 {
+  width: 88px;
+  height: auto;
+  display: block;
+  margin: 0 auto 10px;
+  filter: drop-shadow(0 0 10px rgba(230, 192, 103, 0.45));
+  overflow: visible;
+}
+
+/* Duas animações separadas em dois <g> aninhados — se fossem no mesmo
+   elemento, a segunda animação de "transform" cancelaria a primeira. */
+.bat2-float {
+  transform-box: view-box;
+  transform-origin: 256px 260px;
+  animation: morcego2-flutuar 2.8s ease-in-out infinite;
+}
+
+.bat2-flutter {
+  transform-box: view-box;
+  transform-origin: 256px 260px;
+  animation: morcego2-farfalhar 0.55s ease-in-out infinite;
+}
+
+@keyframes morcego2-flutuar {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* achata levemente na horizontal — sugere o movimento das asas sem separar o traçado */
+@keyframes morcego2-farfalhar {
+  0%, 100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.93);
+  }
+}
+
+.bat2-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: morcego2-brilho 1.6s ease-in-out infinite;
+}
+
+.bat2-sparkle-atraso {
+  animation-delay: 0.4s;
+}
+
+@keyframes morcego2-brilho {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bat2-float,
+  .bat2-flutter,
+  .bat2-sparkle {
+    animation: none;
+  }
+}
+
 .brand-title {
   font-family: var(--font-title);
   font-size: 2.6rem;
