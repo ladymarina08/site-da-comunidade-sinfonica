@@ -843,7 +843,6 @@ main {
     inset 0 0 60px rgba(74, 46, 18, 0.22),
     inset 0 0 0 8px rgba(239, 224, 184, 0.55),
     0 25px 45px rgba(0, 0, 0, 0.55);
-  transform: rotate(-0.6deg);
   text-align: left;
   font-family: var(--font-body);
   font-size: 1.15rem;
