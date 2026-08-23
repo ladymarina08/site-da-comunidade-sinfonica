@@ -554,9 +554,15 @@ main {
   align-items: center;
   justify-content: center;
   font-size: 1.8rem;
+  color: var(--gold);
   background: var(--black);
   border: 1px solid var(--gold);
   border-radius: 50%;
+}
+
+.band-avatar svg {
+  width: 32px;
+  height: 32px;
 }
 
 .band-genre {
