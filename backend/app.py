@@ -247,7 +247,7 @@ def usuario_atual():
         return None
     with get_db() as conn:
         usuario = conn.execute(
-            "SELECT id, nome, email, admin FROM usuarios WHERE id = ?", (usuario_id,)
+            "SELECT id, nome, email, admin, criado_em FROM usuarios WHERE id = ?", (usuario_id,)
         ).fetchone()
     return usuario
 
@@ -364,8 +364,66 @@ def eu():
             "nome": usuario["nome"],
             "email": usuario["email"],
             "admin": bool(usuario["admin"]),
+            "criado_em": usuario["criado_em"],
         },
     )
+
+
+@app.put("/api/perfil")
+@requer_login
+def atualizar_perfil():
+    dados = request.get_json(silent=True) or {}
+    nome = (dados.get("nome") or "").strip()
+    email = (dados.get("email") or "").strip().lower()
+
+    if not nome or len(nome) < 2:
+        return jsonify(ok=False, erro="Informe seu nome."), 400
+    if not EMAIL_REGEX.match(email):
+        return jsonify(ok=False, erro="E-mail inválido."), 400
+
+    usuario = usuario_atual()
+    try:
+        with get_db() as conn:
+            conn.execute(
+                "UPDATE usuarios SET nome = ?, email = ? WHERE id = ?", (nome, email, usuario["id"])
+            )
+    except sqlite3.IntegrityError:
+        return jsonify(ok=False, erro="Já existe uma conta com esse e-mail."), 409
+
+    return jsonify(
+        ok=True,
+        usuario={
+            "id": usuario["id"],
+            "nome": nome,
+            "email": email,
+            "admin": bool(usuario["admin"]),
+            "criado_em": usuario["criado_em"],
+        },
+    )
+
+
+@app.post("/api/alterar-senha")
+@requer_login
+def alterar_senha():
+    dados = request.get_json(silent=True) or {}
+    senha_atual = dados.get("senha_atual") or ""
+    senha_nova = dados.get("senha_nova") or ""
+
+    if len(senha_nova) < 6:
+        return jsonify(ok=False, erro="A nova senha precisa ter pelo menos 6 caracteres."), 400
+
+    usuario = usuario_atual()
+    with get_db() as conn:
+        registro = conn.execute(
+            "SELECT senha_hash FROM usuarios WHERE id = ?", (usuario["id"],)
+        ).fetchone()
+        if not registro or not check_password_hash(registro["senha_hash"], senha_atual):
+            return jsonify(ok=False, erro="Senha atual incorreta."), 401
+
+        nova_hash = generate_password_hash(senha_nova)
+        conn.execute("UPDATE usuarios SET senha_hash = ? WHERE id = ?", (nova_hash, usuario["id"]))
+
+    return jsonify(ok=True)
 
 
 def _token_ainda_valido(expira_em_iso: str) -> bool:

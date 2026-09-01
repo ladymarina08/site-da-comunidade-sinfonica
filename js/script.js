@@ -597,6 +597,87 @@ if (bandaForm) {
   });
 }
 
+// ---------- Meu Perfil (perfil.html) ----------
+
+function formatarDataCadastro(timestampSql) {
+  if (!timestampSql) return '—';
+  const [ano, mes, dia] = timestampSql.split(' ')[0].split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+function preencherPerfil(usuario) {
+  const campoNome = document.getElementById('perfilNome');
+  const campoEmail = document.getElementById('perfilEmail');
+  const membroDesde = document.getElementById('perfilMembroDesde');
+  const badgeAdmin = document.getElementById('perfilBadgeAdmin');
+
+  if (campoNome) campoNome.value = usuario.nome;
+  if (campoEmail) campoEmail.value = usuario.email;
+  if (membroDesde) membroDesde.textContent = formatarDataCadastro(usuario.criado_em);
+  if (badgeAdmin) badgeAdmin.hidden = !usuario.admin;
+}
+
+const perfilForm = document.getElementById('perfilForm');
+const perfilMsg = document.getElementById('perfilMsg');
+
+if (perfilForm) {
+  perfilForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const corpo = {
+      nome: document.getElementById('perfilNome').value,
+      email: document.getElementById('perfilEmail').value,
+    };
+
+    const { status, dados } = await chamarApi('/api/perfil', {
+      method: 'PUT',
+      body: JSON.stringify(corpo),
+    });
+
+    perfilMsg.classList.add('show');
+    if (status === 200 && dados.ok) {
+      perfilMsg.textContent = 'Dados atualizados!';
+      if (userGreeting) {
+        userGreeting.textContent = `Olá, ${dados.usuario.nome.split(' ')[0]}`;
+      }
+    } else {
+      perfilMsg.textContent = dados.erro || 'Não foi possível salvar as alterações.';
+    }
+  });
+}
+
+const senhaForm = document.getElementById('senhaForm');
+const senhaMsg = document.getElementById('senhaMsg');
+
+if (senhaForm) {
+  senhaForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const senhaAtual = document.getElementById('senhaAtual').value;
+    const senhaNova = document.getElementById('senhaNova').value;
+    const senhaNovaConfirmar = document.getElementById('senhaNovaConfirmar').value;
+
+    if (senhaNova !== senhaNovaConfirmar) {
+      senhaMsg.textContent = 'As senhas novas não coincidem.';
+      senhaMsg.classList.add('show');
+      return;
+    }
+
+    const { status, dados } = await chamarApi('/api/alterar-senha', {
+      method: 'POST',
+      body: JSON.stringify({ senha_atual: senhaAtual, senha_nova: senhaNova }),
+    });
+
+    senhaMsg.classList.add('show');
+    if (status === 200 && dados.ok) {
+      senhaForm.reset();
+      senhaMsg.textContent = 'Senha alterada com sucesso!';
+    } else {
+      senhaMsg.textContent = dados.erro || 'Não foi possível alterar a senha.';
+    }
+  });
+}
+
 // ---------- Proteção das páginas internas + saudação + admin ----------
 // Toda página que tem <nav id="mainNav"> é considerada "interna" e exige login.
 // Páginas com <body data-admin-only> também exigem que o usuário seja admin.
@@ -630,5 +711,6 @@ if (mainNav) {
     if (document.getElementById('bandsGrid')) carregarBandas();
     if (showsList) carregarShowsAdmin();
     if (bandasList) carregarBandasAdmin();
+    if (perfilForm) preencherPerfil(usuario);
   });
 }

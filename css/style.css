@@ -416,7 +416,8 @@ p {
 }
 
 .login-form label,
-.admin-form label {
+.admin-form label,
+.form-card label {
   display: block;
   font-family: var(--font-heading);
   font-size: 0.85rem;
@@ -431,7 +432,11 @@ p {
 .admin-form input[type="text"],
 .admin-form input[type="date"],
 .admin-form input[type="time"],
-.admin-form textarea {
+.admin-form textarea,
+.form-card input[type="text"],
+.form-card input[type="email"],
+.form-card input[type="password"],
+.form-card textarea {
   width: 100%;
   padding: 12px 14px;
   background: var(--black);
@@ -442,14 +447,17 @@ p {
   font-size: 1.05rem;
 }
 
-.admin-form textarea {
+.admin-form textarea,
+.form-card textarea {
   resize: vertical;
   min-height: 60px;
 }
 
 .login-form input:focus,
 .admin-form input:focus,
-.admin-form textarea:focus {
+.admin-form textarea:focus,
+.form-card input:focus,
+.form-card textarea:focus {
   outline: none;
   border-color: var(--gold);
   box-shadow: 0 0 0 3px var(--gold-glow);
@@ -734,7 +742,8 @@ main {
   border-bottom: none;
 }
 
-.admin-form {
+.admin-form,
+.form-card {
   max-width: 760px;
   background: linear-gradient(160deg, var(--black-3), var(--black-2));
   border: 1px solid var(--border);
@@ -743,7 +752,8 @@ main {
   margin: 16px 0 26px;
 }
 
-.admin-form .btn {
+.admin-form .btn,
+.form-card .btn {
   margin-top: 18px;
 }
 
@@ -816,6 +826,16 @@ main {
   color: var(--text-muted);
   font-style: italic;
   padding: 20px;
+}
+
+.perfil-info-extra {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 4px 0 0;
+}
+
+.perfil-badge-admin {
+  color: var(--gold-soft);
 }
 
 /* ---------- Início (hub de navegação) ---------- */
