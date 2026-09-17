@@ -250,6 +250,57 @@ function formatarDataBR(dataISO) {
   return dataISO.split('-').reverse().join('/');
 }
 
+function extrairEstado(cidade) {
+  const partes = (cidade || '').split('/');
+  return partes.length > 1 ? partes[partes.length - 1].trim() : '';
+}
+
+function formatarDataHoraCompacta(data) {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+  const hora = String(data.getHours()).padStart(2, '0');
+  const min = String(data.getMinutes()).padStart(2, '0');
+  return `${ano}${mes}${dia}T${hora}${min}00`;
+}
+
+function gerarLinkGoogleCalendar(show) {
+  const [ano, mes, dia] = show.data.split('-').map(Number);
+  const titulo = encodeURIComponent(`${show.banda} — Comunidade Sinfônica`);
+  const local = encodeURIComponent(`${show.local}, ${show.cidade}`);
+  const detalhes = encodeURIComponent(show.observacoes || '');
+
+  let datas;
+  let ctz = '';
+  if (show.horario) {
+    const [hora, minuto] = show.horario.split(':').map(Number);
+    const inicio = new Date(ano, mes - 1, dia, hora, minuto);
+    const fim = new Date(inicio.getTime() + 3 * 60 * 60 * 1000); // duração padrão: 3h
+    datas = `${formatarDataHoraCompacta(inicio)}/${formatarDataHoraCompacta(fim)}`;
+    ctz = `&ctz=${encodeURIComponent('America/Sao_Paulo')}`;
+  } else {
+    // Sem horário definido: evento de dia inteiro (data final é exclusiva, por
+    // isso o dia seguinte).
+    const formatarSoData = (data) =>
+      `${data.getFullYear()}${String(data.getMonth() + 1).padStart(2, '0')}${String(data.getDate()).padStart(2, '0')}`;
+    const inicio = new Date(ano, mes - 1, dia);
+    const fim = new Date(ano, mes - 1, dia + 1);
+    datas = `${formatarSoData(inicio)}/${formatarSoData(fim)}`;
+  }
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${datas}${ctz}&details=${detalhes}&location=${local}`;
+}
+
+function montarBotaoCalendario(show) {
+  const link = document.createElement('a');
+  link.className = 'btn-lembrete btn-calendario';
+  link.href = gerarLinkGoogleCalendar(show);
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = '📅 Adicionar ao Google Calendar';
+  return link;
+}
+
 function montarBotaoLembrete(show, lembreteAtivo) {
   const botao = document.createElement('button');
   botao.type = 'button';
@@ -312,10 +363,57 @@ function montarCardShow(show, lembreteAtivo) {
     info.appendChild(obs);
   }
 
-  info.appendChild(montarBotaoLembrete(show, lembreteAtivo));
+  const acoes = document.createElement('div');
+  acoes.className = 'show-acoes';
+  acoes.append(montarBotaoLembrete(show, lembreteAtivo), montarBotaoCalendario(show));
+  info.appendChild(acoes);
 
   artigo.append(dataBox, info);
   return artigo;
+}
+
+let showsFuturosCache = [];
+let idsComLembreteCache = new Set();
+
+function renderizarAgenda(lista) {
+  const grid = document.getElementById('showsGrid');
+  grid.innerHTML = '';
+
+  if (lista.length === 0) {
+    grid.innerHTML = '<p class="empty-state">Nenhum show encontrado.</p>';
+    return;
+  }
+
+  let mesAtual = null;
+  lista.forEach((show) => {
+    const mesDoShow = show.data.slice(0, 7);
+    if (mesDoShow !== mesAtual) {
+      mesAtual = mesDoShow;
+      const titulo = document.createElement('h2');
+      titulo.className = 'agenda-mes';
+      titulo.textContent = formatarMesAno(show.data);
+      grid.appendChild(titulo);
+    }
+    grid.appendChild(montarCardShow(show, idsComLembreteCache.has(show.id)));
+  });
+}
+
+function popularFiltroEstado(lista) {
+  const select = document.getElementById('agendaFiltroEstado');
+  if (!select) return;
+
+  const estados = [...new Set(lista.map((show) => extrairEstado(show.cidade)).filter(Boolean))].sort();
+  select.innerHTML =
+    '<option value="">Todos os estados</option>' +
+    estados.map((uf) => `<option value="${uf}">${uf}</option>`).join('');
+
+  select.addEventListener('change', () => {
+    const filtro = select.value;
+    const filtrados = filtro
+      ? showsFuturosCache.filter((show) => extrairEstado(show.cidade) === filtro)
+      : showsFuturosCache;
+    renderizarAgenda(filtrados);
+  });
 }
 
 async function carregarAgenda() {
@@ -332,32 +430,22 @@ async function carregarAgenda() {
     return;
   }
 
-  const idsComLembrete = new Set(
+  idsComLembreteCache = new Set(
     lembretesResp.status === 200 && lembretesResp.dados.ok
       ? lembretesResp.dados.shows.map((show) => show.id)
       : []
   );
 
   const hoje = dataDeHoje();
-  const showsFuturos = dados.shows.filter((show) => show.data >= hoje);
+  showsFuturosCache = dados.shows.filter((show) => show.data >= hoje);
 
-  if (showsFuturos.length === 0) {
+  if (showsFuturosCache.length === 0) {
     grid.innerHTML = '<p class="empty-state">Nenhum show na agenda no momento. Volte em breve!</p>';
     return;
   }
 
-  let mesAtual = null;
-  showsFuturos.forEach((show) => {
-    const mesDoShow = show.data.slice(0, 7);
-    if (mesDoShow !== mesAtual) {
-      mesAtual = mesDoShow;
-      const titulo = document.createElement('h2');
-      titulo.className = 'agenda-mes';
-      titulo.textContent = formatarMesAno(show.data);
-      grid.appendChild(titulo);
-    }
-    grid.appendChild(montarCardShow(show, idsComLembrete.has(show.id)));
-  });
+  popularFiltroEstado(showsFuturosCache);
+  renderizarAgenda(showsFuturosCache);
 }
 
 // ---------- Bandas da comunidade (exibição pública em bandas.html) ----------

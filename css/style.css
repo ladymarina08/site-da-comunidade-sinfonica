@@ -602,6 +602,37 @@ main {
   gap: 18px;
 }
 
+.agenda-filtro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 20px 10px;
+}
+
+.agenda-filtro label {
+  color: var(--gold-soft);
+  font-size: 0.95rem;
+}
+
+.agenda-filtro select {
+  padding: 10px 14px;
+  background: var(--black);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.agenda-filtro select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
 .agenda-mes {
   margin: 10px 0 -4px;
   padding-bottom: 8px;
@@ -678,6 +709,12 @@ main {
   font-style: italic;
 }
 
+.show-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .btn-lembrete {
   display: inline-flex;
   align-items: center;
@@ -704,6 +741,10 @@ main {
 .btn-lembrete.ativo {
   background: var(--gold);
   color: var(--black);
+}
+
+.btn-calendario {
+  text-decoration: none;
 }
 
 /* ---------- Bandas da comunidade ---------- */
