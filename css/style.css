@@ -678,6 +678,34 @@ main {
   font-style: italic;
 }
 
+.btn-lembrete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 16px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: transparent;
+  border: 1px solid var(--gold);
+  border-radius: 20px;
+  color: var(--gold);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-lembrete:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+.btn-lembrete.ativo {
+  background: var(--gold);
+  color: var(--black);
+}
+
 /* ---------- Bandas da comunidade ---------- */
 
 .bands-grid {

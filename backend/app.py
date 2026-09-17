@@ -18,10 +18,13 @@ import os
 import re
 import secrets
 import sqlite3
+import threading
+import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from flask import Flask, abort, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -144,6 +147,22 @@ def init_db() -> None:
             """
         )
 
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS lembretes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_id INTEGER NOT NULL,
+                show_id INTEGER NOT NULL,
+                enviado_dia_antes INTEGER NOT NULL DEFAULT 0,
+                enviado_dia_show INTEGER NOT NULL DEFAULT 0,
+                criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (usuario_id, show_id),
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+                FOREIGN KEY (show_id) REFERENCES shows(id)
+            )
+            """
+        )
+
 
 def emails_admin_configurados() -> set[str]:
     """Lê a variável de ambiente ADMIN_EMAIL (um ou mais e-mails separados por
@@ -195,7 +214,12 @@ def enviar_email(destinatario: str, assunto: str, html: str) -> bool:
     só imprime no console, pra dar pra testar sem precisar de conta lá.
     Retorna True se enviou (ou simulou) com sucesso, False se deu erro."""
     if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
-        print(f"[email simulado] Para: {destinatario} | Assunto: {assunto}\n{html}")
+        mensagem = f"[email simulado] Para: {destinatario} | Assunto: {assunto}\n{html}"
+        try:
+            print(mensagem)
+        except UnicodeEncodeError:
+            # console do Windows (cp1252) não exibe alguns emojis — imprime sem eles
+            print(mensagem.encode("ascii", "ignore").decode("ascii"))
         return True
 
     corpo = json.dumps(
@@ -228,12 +252,87 @@ def enviar_email(destinatario: str, assunto: str, html: str) -> bool:
         return False
 
 
+def _texto_lembrete(usuario_nome: str, show: sqlite3.Row, quando: str) -> tuple[str, str]:
+    data_br = "/".join(reversed(show["data"].split("-")))
+    local_texto = f'{show["local"]}, {show["cidade"]}'
+    horario_texto = f' às {show["horario"]}' if show["horario"] else ""
+    quando_texto = "é amanhã" if quando == "amanha" else "é hoje"
+
+    assunto = f'{"Amanhã" if quando == "amanha" else "Hoje"} tem show: {show["banda"]}'
+    html = f"""
+    <p>Olá, {usuario_nome}!</p>
+    <p>O show de <strong>{show["banda"]}</strong> que você marcou pra lembrar {quando_texto}
+    ({data_br}{horario_texto}), em {local_texto}.</p>
+    <p>Não perca! 🦇</p>
+    <p>— Comunidade Sinfônica</p>
+    """
+    return assunto, html
+
+
+def enviar_lembretes_pendentes() -> None:
+    """Verifica quem marcou lembrete pra shows que são hoje ou amanhã (horário
+    de Brasília) e ainda não recebeu o e-mail correspondente, e envia."""
+    hoje_dt = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    hoje = hoje_dt.isoformat()
+    amanha = (hoje_dt + timedelta(days=1)).isoformat()
+
+    with get_db() as conn:
+        pendentes = conn.execute(
+            """
+            SELECT lembretes.id AS lembrete_id, lembretes.enviado_dia_antes, lembretes.enviado_dia_show,
+                   usuarios.email AS usuario_email, usuarios.nome AS usuario_nome,
+                   shows.banda, shows.local, shows.cidade, shows.data, shows.horario
+            FROM lembretes
+            JOIN usuarios ON usuarios.id = lembretes.usuario_id
+            JOIN shows ON shows.id = lembretes.show_id
+            WHERE shows.data IN (?, ?)
+            """,
+            (hoje, amanha),
+        ).fetchall()
+
+        for linha in pendentes:
+            if linha["data"] == amanha and not linha["enviado_dia_antes"]:
+                assunto, html = _texto_lembrete(linha["usuario_nome"], linha, "amanha")
+                if enviar_email(linha["usuario_email"], assunto, html):
+                    conn.execute(
+                        "UPDATE lembretes SET enviado_dia_antes = 1 WHERE id = ?", (linha["lembrete_id"],)
+                    )
+            if linha["data"] == hoje and not linha["enviado_dia_show"]:
+                assunto, html = _texto_lembrete(linha["usuario_nome"], linha, "hoje")
+                if enviar_email(linha["usuario_email"], assunto, html):
+                    conn.execute(
+                        "UPDATE lembretes SET enviado_dia_show = 1 WHERE id = ?", (linha["lembrete_id"],)
+                    )
+
+
+def _loop_lembretes() -> None:
+    while True:
+        try:
+            enviar_lembretes_pendentes()
+        except Exception as erro:  # nunca deixa a thread morrer por um erro passageiro
+            print(f"[erro ao verificar lembretes] {erro}")
+        time.sleep(3600)  # verifica de hora em hora
+
+
+def iniciar_lembretes_em_segundo_plano() -> None:
+    # Em dev (python app.py), o reloader do Flask reexecuta este arquivo duas
+    # vezes: uma no processo "monitor" (que só fica de olho em mudanças nos
+    # arquivos) e outra no processo que de fato serve as requisições (esse
+    # sim com WERKZEUG_RUN_MAIN=true). Sem essa checagem a thread rodaria em
+    # dobro em dev. Em produção (gunicorn importa o módulo, __name__ não é
+    # "__main__"), a thread começa normalmente.
+    if __name__ == "__main__" and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        return
+    threading.Thread(target=_loop_lembretes, daemon=True).start()
+
+
 # Roda sempre que o módulo é carregado — seja com "python app.py" (dev local)
 # ou importado pelo gunicorn em produção (o bloco "if __name__" no fim do
 # arquivo não executa nesse segundo caso).
 init_db()
 bootstrap_admin()
 seed_inicial()
+iniciar_lembretes_em_segundo_plano()
 
 
 # =====================================================
@@ -614,7 +713,58 @@ def editar_show(show_id):
 @requer_admin
 def excluir_show(show_id):
     with get_db() as conn:
+        conn.execute("DELETE FROM lembretes WHERE show_id = ?", (show_id,))
         conn.execute("DELETE FROM shows WHERE id = ?", (show_id,))
+    return jsonify(ok=True)
+
+
+# =====================================================
+# API de lembretes de show ("Lembrar-me" na agenda)
+# =====================================================
+
+@app.get("/api/lembretes")
+@requer_login
+def listar_lembretes():
+    usuario = usuario_atual()
+    with get_db() as conn:
+        linhas = conn.execute(
+            """
+            SELECT shows.id, shows.banda, shows.local, shows.cidade, shows.data, shows.horario, shows.observacoes
+            FROM lembretes
+            JOIN shows ON shows.id = lembretes.show_id
+            WHERE lembretes.usuario_id = ?
+            ORDER BY shows.data, shows.horario
+            """,
+            (usuario["id"],),
+        ).fetchall()
+    return jsonify(ok=True, shows=[dict(linha) for linha in linhas])
+
+
+@app.post("/api/lembretes/<int:show_id>")
+@requer_login
+def criar_lembrete(show_id):
+    usuario = usuario_atual()
+    with get_db() as conn:
+        show = conn.execute("SELECT id FROM shows WHERE id = ?", (show_id,)).fetchone()
+        if not show:
+            return jsonify(ok=False, erro="Show não encontrado."), 404
+        try:
+            conn.execute(
+                "INSERT INTO lembretes (usuario_id, show_id) VALUES (?, ?)", (usuario["id"], show_id)
+            )
+        except sqlite3.IntegrityError:
+            pass  # já tinha lembrete marcado pra esse show, não precisa duplicar
+    return jsonify(ok=True)
+
+
+@app.delete("/api/lembretes/<int:show_id>")
+@requer_login
+def excluir_lembrete(show_id):
+    usuario = usuario_atual()
+    with get_db() as conn:
+        conn.execute(
+            "DELETE FROM lembretes WHERE usuario_id = ? AND show_id = ?", (usuario["id"], show_id)
+        )
     return jsonify(ok=True)
 
 

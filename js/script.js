@@ -250,7 +250,30 @@ function formatarDataBR(dataISO) {
   return dataISO.split('-').reverse().join('/');
 }
 
-function montarCardShow(show) {
+function montarBotaoLembrete(show, lembreteAtivo) {
+  const botao = document.createElement('button');
+  botao.type = 'button';
+  botao.className = 'btn-lembrete';
+  botao.classList.toggle('ativo', Boolean(lembreteAtivo));
+  botao.textContent = lembreteAtivo ? '🔔 Lembrete ativado' : '🔕 Lembrar-me';
+
+  botao.addEventListener('click', async () => {
+    const estavaAtivo = botao.classList.contains('ativo');
+    botao.disabled = true;
+    const { status } = await chamarApi(`/api/lembretes/${show.id}`, {
+      method: estavaAtivo ? 'DELETE' : 'POST',
+    });
+    botao.disabled = false;
+    if (status === 200) {
+      botao.classList.toggle('ativo', !estavaAtivo);
+      botao.textContent = !estavaAtivo ? '🔔 Lembrete ativado' : '🔕 Lembrar-me';
+    }
+  });
+
+  return botao;
+}
+
+function montarCardShow(show, lembreteAtivo) {
   const { dia, mes } = formatarDataCard(show.data);
 
   const artigo = document.createElement('article');
@@ -289,19 +312,31 @@ function montarCardShow(show) {
     info.appendChild(obs);
   }
 
+  info.appendChild(montarBotaoLembrete(show, lembreteAtivo));
+
   artigo.append(dataBox, info);
   return artigo;
 }
 
 async function carregarAgenda() {
   const grid = document.getElementById('showsGrid');
-  const { status, dados } = await chamarApi('/api/shows');
+  const [showsResp, lembretesResp] = await Promise.all([
+    chamarApi('/api/shows'),
+    chamarApi('/api/lembretes'),
+  ]);
+  const { status, dados } = showsResp;
   grid.innerHTML = '';
 
   if (status !== 200 || !dados.ok) {
     grid.innerHTML = '<p class="empty-state">Não foi possível carregar a agenda.</p>';
     return;
   }
+
+  const idsComLembrete = new Set(
+    lembretesResp.status === 200 && lembretesResp.dados.ok
+      ? lembretesResp.dados.shows.map((show) => show.id)
+      : []
+  );
 
   const hoje = dataDeHoje();
   const showsFuturos = dados.shows.filter((show) => show.data >= hoje);
@@ -321,7 +356,7 @@ async function carregarAgenda() {
       titulo.textContent = formatarMesAno(show.data);
       grid.appendChild(titulo);
     }
-    grid.appendChild(montarCardShow(show));
+    grid.appendChild(montarCardShow(show, idsComLembrete.has(show.id)));
   });
 }
 
@@ -650,6 +685,54 @@ function preencherPerfil(usuario) {
   if (badgeAdmin) badgeAdmin.hidden = !usuario.admin;
 }
 
+function montarItemLembrete(show) {
+  const item = document.createElement('div');
+  item.className = 'admin-list-item';
+
+  const info = document.createElement('div');
+  info.className = 'info';
+  const nomeForte = document.createElement('strong');
+  nomeForte.textContent = show.banda;
+  info.appendChild(nomeForte);
+  const horarioTexto = show.horario ? `às ${show.horario}` : '(horário a confirmar)';
+  info.append(` — ${show.local}, ${show.cidade} • ${formatarDataBR(show.data)} ${horarioTexto}`);
+
+  const acoes = document.createElement('div');
+  acoes.className = 'admin-list-acoes';
+
+  const remover = document.createElement('button');
+  remover.type = 'button';
+  remover.className = 'btn btn-danger';
+  remover.textContent = 'Remover lembrete';
+  remover.addEventListener('click', async () => {
+    await chamarApi(`/api/lembretes/${show.id}`, { method: 'DELETE' });
+    carregarLembretes();
+  });
+
+  acoes.appendChild(remover);
+  item.append(info, acoes);
+  return item;
+}
+
+async function carregarLembretes() {
+  const lista = document.getElementById('lembretesList');
+  const hoje = dataDeHoje();
+  const { status, dados } = await chamarApi('/api/lembretes');
+  lista.innerHTML = '';
+
+  if (status !== 200 || !dados.ok) {
+    lista.innerHTML = '<p class="empty-state">Não foi possível carregar seus lembretes.</p>';
+    return;
+  }
+
+  const showsFuturos = dados.shows.filter((show) => show.data >= hoje);
+  if (showsFuturos.length === 0) {
+    lista.innerHTML = '<p class="empty-state">Você ainda não marcou nenhum show pra lembrar.</p>';
+    return;
+  }
+  showsFuturos.forEach((show) => lista.appendChild(montarItemLembrete(show)));
+}
+
 const perfilForm = document.getElementById('perfilForm');
 const perfilMsg = document.getElementById('perfilMsg');
 
@@ -745,5 +828,6 @@ if (mainNav) {
     if (showsList) carregarShowsAdmin();
     if (bandasList) carregarBandasAdmin();
     if (perfilForm) preencherPerfil(usuario);
+    if (document.getElementById('lembretesList')) carregarLembretes();
   });
 }

@@ -85,6 +85,18 @@ Se estiver usando o Claude Code, também dá pra abrir pelo preview com o nome
   4. No Render → **Environment**, adicione `BREVO_API_KEY` (a chave) e `BREVO_SENDER_EMAIL`
      (o e-mail que você verificou no passo 2).
 
+## Como funciona o "Lembrar-me" da agenda
+
+- Em cada show da agenda (`agenda.html`) tem um botão **Lembrar-me** — quem clicar recebe um
+  e-mail (via Brevo, mesma configuração do "esqueci minha senha" acima) um dia antes do show
+  e no dia do show.
+- Os shows marcados também aparecem em **Meu Perfil** (`perfil.html`), com a opção de remover
+  o lembrete.
+- O envio roda sozinho: uma verificação em segundo plano no backend confere, de hora em hora,
+  quem marcou lembrete pra shows que são "amanhã" ou "hoje" (horário de Brasília) e ainda não
+  recebeu o e-mail — não precisa de nenhum serviço externo de agendamento (cron) nem ação
+  manual seu.
+
 ## Como promover alguém a administrador(a)
 
 Só quem for admin vê o link "Admin" no menu e consegue cadastrar/excluir shows e bandas
