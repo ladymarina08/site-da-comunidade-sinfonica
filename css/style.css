@@ -602,6 +602,17 @@ main {
   gap: 18px;
 }
 
+.agenda-mes {
+  margin: 10px 0 -4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.4rem;
+}
+
+.agenda-mes:first-child {
+  margin-top: 0;
+}
+
 .show-card {
   display: flex;
   align-items: center;

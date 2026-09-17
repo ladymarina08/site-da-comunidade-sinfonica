@@ -223,10 +223,27 @@ if (logoutLink) {
 // ---------- Agenda de shows (exibição pública em agenda.html) ----------
 
 const MESES_PT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+const MESES_PT_LONGOS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
 
 function formatarDataCard(dataISO) {
   const [, mes, dia] = dataISO.split('-');
   return { dia, mes: MESES_PT[Number(mes) - 1] || '' };
+}
+
+function formatarMesAno(dataISO) {
+  const [ano, mes] = dataISO.split('-');
+  return `${MESES_PT_LONGOS[Number(mes) - 1] || ''} de ${ano}`;
+}
+
+function dataDeHoje() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
 }
 
 function formatarDataBR(dataISO) {
@@ -285,11 +302,27 @@ async function carregarAgenda() {
     grid.innerHTML = '<p class="empty-state">Não foi possível carregar a agenda.</p>';
     return;
   }
-  if (dados.shows.length === 0) {
+
+  const hoje = dataDeHoje();
+  const showsFuturos = dados.shows.filter((show) => show.data >= hoje);
+
+  if (showsFuturos.length === 0) {
     grid.innerHTML = '<p class="empty-state">Nenhum show na agenda no momento. Volte em breve!</p>';
     return;
   }
-  dados.shows.forEach((show) => grid.appendChild(montarCardShow(show)));
+
+  let mesAtual = null;
+  showsFuturos.forEach((show) => {
+    const mesDoShow = show.data.slice(0, 7);
+    if (mesDoShow !== mesAtual) {
+      mesAtual = mesDoShow;
+      const titulo = document.createElement('h2');
+      titulo.className = 'agenda-mes';
+      titulo.textContent = formatarMesAno(show.data);
+      grid.appendChild(titulo);
+    }
+    grid.appendChild(montarCardShow(show));
+  });
 }
 
 // ---------- Bandas da comunidade (exibição pública em bandas.html) ----------
