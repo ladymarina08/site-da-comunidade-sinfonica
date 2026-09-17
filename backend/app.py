@@ -150,6 +150,19 @@ def init_db() -> None:
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS perguntas_chatbot (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_id INTEGER,
+                pergunta TEXT NOT NULL,
+                entendida INTEGER NOT NULL DEFAULT 1,
+                criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+            )
+            """
+        )
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS lembretes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 usuario_id INTEGER NOT NULL,
@@ -626,9 +639,32 @@ def chatbot_responder():
     if not pergunta:
         return jsonify(ok=False, erro="Escreva uma pergunta."), 400
 
+    usuario = usuario_atual()
     with get_db() as conn:
         resposta = chatbot.responder(pergunta, conn)
+        entendida = resposta != chatbot.RESPOSTA_NAO_ENTENDI
+        conn.execute(
+            "INSERT INTO perguntas_chatbot (usuario_id, pergunta, entendida) VALUES (?, ?, ?)",
+            (usuario["id"], pergunta, int(entendida)),
+        )
     return jsonify(ok=True, resposta=resposta)
+
+
+@app.get("/api/perguntas-chatbot")
+@requer_admin
+def listar_perguntas_chatbot():
+    with get_db() as conn:
+        linhas = conn.execute(
+            """
+            SELECT perguntas_chatbot.pergunta, perguntas_chatbot.entendida, perguntas_chatbot.criado_em,
+                   usuarios.nome AS usuario_nome
+            FROM perguntas_chatbot
+            LEFT JOIN usuarios ON usuarios.id = perguntas_chatbot.usuario_id
+            ORDER BY perguntas_chatbot.criado_em DESC
+            LIMIT 100
+            """
+        ).fetchall()
+    return jsonify(ok=True, perguntas=[dict(linha) for linha in linhas])
 
 
 # =====================================================

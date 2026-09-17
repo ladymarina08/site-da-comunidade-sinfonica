@@ -918,6 +918,17 @@ main {
   color: var(--gold-soft);
 }
 
+.admin-section-descricao {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  margin: -6px 0 16px;
+}
+
+.chatbot-badge-nao-entendida {
+  color: var(--red-bright);
+  font-weight: 600;
+}
+
 /* ---------- Início (hub de navegação) ---------- */
 
 .hub-grid {

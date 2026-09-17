@@ -536,6 +536,40 @@ function montarItemUsuario(usuario) {
   return item;
 }
 
+function montarItemPerguntaChatbot(item) {
+  const div = document.createElement('div');
+  div.className = 'admin-list-item';
+
+  const info = document.createElement('div');
+  info.className = 'info';
+  const pergunta = document.createElement('strong');
+  pergunta.textContent = item.pergunta;
+  info.appendChild(pergunta);
+  info.append(` — ${item.usuario_nome || 'usuário removido'} • ${formatarDataCadastro(item.criado_em)}`);
+  if (!item.entendida) {
+    const badge = document.createElement('span');
+    badge.className = 'chatbot-badge-nao-entendida';
+    badge.textContent = ' · Não entendida';
+    info.appendChild(badge);
+  }
+
+  div.appendChild(info);
+  return div;
+}
+
+const perguntasChatbotList = document.getElementById('perguntasChatbotList');
+
+async function carregarPerguntasChatbot() {
+  const { status, dados } = await chamarApi('/api/perguntas-chatbot');
+  perguntasChatbotList.innerHTML = '';
+
+  if (status !== 200 || !dados.ok || dados.perguntas.length === 0) {
+    perguntasChatbotList.innerHTML = '<p class="empty-state">Ninguém perguntou nada pro chatbot ainda.</p>';
+    return;
+  }
+  dados.perguntas.forEach((item) => perguntasChatbotList.appendChild(montarItemPerguntaChatbot(item)));
+}
+
 const usuariosList = document.getElementById('usuariosList');
 
 async function carregarUsuarios() {
@@ -986,6 +1020,7 @@ if (mainNav) {
     if (document.getElementById('showsGrid')) carregarAgenda();
     if (document.getElementById('bandsGrid')) carregarBandas();
     if (usuariosList) carregarUsuarios();
+    if (perguntasChatbotList) carregarPerguntasChatbot();
     if (showsList) carregarShowsAdmin();
     if (bandasList) carregarBandasAdmin();
     if (perfilForm) preencherPerfil(usuario);

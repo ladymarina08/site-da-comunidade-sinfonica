@@ -16,6 +16,11 @@ MESES = [
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ]
 
+RESPOSTA_NAO_ENTENDI = (
+    "Não entendi bem sua pergunta. Você pode perguntar sobre: próximos shows (por data, cidade ou mês), "
+    "uma banda específica, playlists, redes sociais, lembretes de show ou sobre a comunidade."
+)
+
 
 def _sem_acento(texto: str) -> str:
     forma_normalizada = unicodedata.normalize("NFKD", texto)
@@ -243,7 +248,4 @@ def responder(pergunta: str, conn: sqlite3.Connection) -> str:
     if _contem_alguma(texto, "admin", "administrador"):
         return "Só administradores da comunidade podem gerenciar shows e bandas. Se precisar de algo, fale com a organização pelo Instagram ou WhatsApp."
 
-    return (
-        "Não entendi bem sua pergunta. Você pode perguntar sobre: próximos shows (por data, cidade ou mês), "
-        "uma banda específica, playlists, redes sociais, lembretes de show ou sobre a comunidade."
-    )
+    return RESPOSTA_NAO_ENTENDI
