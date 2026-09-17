@@ -427,6 +427,40 @@ async function carregarBandas() {
 // clicar em "Editar" preenche os campos e troca o botão pra "Salvar
 // alterações" — ao enviar, faz PUT em vez de POST.
 
+function montarItemUsuario(usuario) {
+  const item = document.createElement('div');
+  item.className = 'admin-list-item';
+
+  const info = document.createElement('div');
+  info.className = 'info';
+  const nomeForte = document.createElement('strong');
+  nomeForte.textContent = usuario.nome;
+  info.appendChild(nomeForte);
+  info.append(` — ${usuario.email} • cadastrado em ${formatarDataCadastro(usuario.criado_em)}`);
+  if (usuario.admin) {
+    const badge = document.createElement('span');
+    badge.className = 'perfil-badge-admin';
+    badge.textContent = ' · Administrador(a)';
+    info.appendChild(badge);
+  }
+
+  item.appendChild(info);
+  return item;
+}
+
+const usuariosList = document.getElementById('usuariosList');
+
+async function carregarUsuarios() {
+  const { status, dados } = await chamarApi('/api/usuarios');
+  usuariosList.innerHTML = '';
+
+  if (status !== 200 || !dados.ok || dados.usuarios.length === 0) {
+    usuariosList.innerHTML = '<p class="empty-state">Nenhum usuário cadastrado ainda.</p>';
+    return;
+  }
+  dados.usuarios.forEach((usuario) => usuariosList.appendChild(montarItemUsuario(usuario)));
+}
+
 const showForm = document.getElementById('showForm');
 const showMsg = document.getElementById('showMsg');
 const showsList = document.getElementById('showsList');
@@ -825,6 +859,7 @@ if (mainNav) {
 
     if (document.getElementById('showsGrid')) carregarAgenda();
     if (document.getElementById('bandsGrid')) carregarBandas();
+    if (usuariosList) carregarUsuarios();
     if (showsList) carregarShowsAdmin();
     if (bandasList) carregarBandasAdmin();
     if (perfilForm) preencherPerfil(usuario);

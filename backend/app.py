@@ -614,6 +614,20 @@ def redefinir_senha():
 
 
 # =====================================================
+# API de usuários cadastrados (só leitura, só admin)
+# =====================================================
+
+@app.get("/api/usuarios")
+@requer_admin
+def listar_usuarios():
+    with get_db() as conn:
+        linhas = conn.execute(
+            "SELECT id, nome, email, admin, criado_em FROM usuarios ORDER BY criado_em DESC"
+        ).fetchall()
+    return jsonify(ok=True, usuarios=[dict(linha) for linha in linhas])
+
+
+# =====================================================
 # API da agenda de shows
 # (leitura: qualquer usuário logado / escrita: só admin)
 # =====================================================
