@@ -916,6 +916,44 @@ if (senhaForm) {
   });
 }
 
+// ---------- Chatbot da tela de Início (inicio.html) ----------
+
+const chatbotForm = document.getElementById('chatbotForm');
+const chatbotMensagens = document.getElementById('chatbotMensagens');
+const chatbotInput = document.getElementById('chatbotInput');
+
+function adicionarMensagemChatbot(texto, autor) {
+  const msg = document.createElement('div');
+  msg.className = `chatbot-msg chatbot-msg-${autor}`;
+  msg.textContent = texto;
+  chatbotMensagens.appendChild(msg);
+  chatbotMensagens.scrollTop = chatbotMensagens.scrollHeight;
+}
+
+if (chatbotForm) {
+  chatbotForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const pergunta = chatbotInput.value.trim();
+    if (!pergunta) return;
+
+    adicionarMensagemChatbot(pergunta, 'user');
+    chatbotInput.value = '';
+    chatbotInput.disabled = true;
+
+    const { status, dados } = await chamarApi('/api/chatbot', {
+      method: 'POST',
+      body: JSON.stringify({ pergunta }),
+    });
+
+    chatbotInput.disabled = false;
+    chatbotInput.focus();
+    adicionarMensagemChatbot(
+      status === 200 && dados.ok ? dados.resposta : 'Não consegui responder agora, tenta de novo.',
+      'bot'
+    );
+  });
+}
+
 // ---------- Proteção das páginas internas + saudação + admin ----------
 // Toda página que tem <nav id="mainNav"> é considerada "interna" e exige login.
 // Páginas com <body data-admin-only> também exigem que o usuário seja admin.

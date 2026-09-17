@@ -30,6 +30,7 @@ from flask import Flask, abort, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import get_db
+import chatbot
 import seed_bandas
 import seed_agenda
 
@@ -611,6 +612,23 @@ def redefinir_senha():
         conn.execute("UPDATE redefinicoes_senha SET usado = 1 WHERE id = ?", (registro["id"],))
 
     return jsonify(ok=True)
+
+
+# =====================================================
+# API do chatbot da tela de Início
+# =====================================================
+
+@app.post("/api/chatbot")
+@requer_login
+def chatbot_responder():
+    dados = request.get_json(silent=True) or {}
+    pergunta = (dados.get("pergunta") or "").strip()
+    if not pergunta:
+        return jsonify(ok=False, erro="Escreva uma pergunta."), 400
+
+    with get_db() as conn:
+        resposta = chatbot.responder(pergunta, conn)
+    return jsonify(ok=True, resposta=resposta)
 
 
 # =====================================================
