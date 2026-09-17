@@ -55,8 +55,8 @@ def _shows_futuros_da_banda(banda: str, conn: sqlite3.Connection) -> str | None:
     partes = []
     for show in shows[:3]:
         horario_texto = f' às {show["horario"]}' if show["horario"] else ""
-        partes.append(f'{_data_br(show["data"])}{horario_texto} em {show["local"]}, {show["cidade"]}')
-    return f'Show(s) da {banda}: ' + "; ".join(partes) + "."
+        partes.append(f'• {_data_br(show["data"])}{horario_texto} em {show["local"]}, {show["cidade"]}')
+    return f'Show(s) da {banda}:\n' + "\n".join(partes)
 
 
 def _achar_banda_citada(texto: str, conn: sqlite3.Connection):
@@ -133,8 +133,8 @@ def _responder_shows_por_cidade(texto: str, conn: sqlite3.Connection) -> str | N
     partes = []
     for show in shows[:5]:
         horario_texto = f' às {show["horario"]}' if show["horario"] else ""
-        partes.append(f'{show["banda"]} em {_data_br(show["data"])}{horario_texto} ({show["local"]})')
-    return f"Show(s) em {cidade_citada}: " + "; ".join(partes) + "."
+        partes.append(f'• {show["banda"]} em {_data_br(show["data"])}{horario_texto} ({show["local"]})')
+    return f"Show(s) em {cidade_citada}:\n" + "\n".join(partes)
 
 
 def _responder_shows_do_mes(texto: str, conn: sqlite3.Connection) -> str | None:
@@ -154,8 +154,8 @@ def _responder_shows_do_mes(texto: str, conn: sqlite3.Connection) -> str | None:
         partes = []
         for show in shows[:6]:
             horario_texto = f' às {show["horario"]}' if show["horario"] else ""
-            partes.append(f'{show["banda"]} ({_data_br(show["data"])}{horario_texto}, {show["cidade"]})')
-        return f"Shows em {nome_mes}: " + "; ".join(partes) + "."
+            partes.append(f'• {show["banda"]} ({_data_br(show["data"])}{horario_texto}, {show["cidade"]})')
+        return f"Shows em {nome_mes}:\n" + "\n".join(partes)
 
     return None
 

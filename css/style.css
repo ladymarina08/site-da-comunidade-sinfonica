@@ -1001,6 +1001,7 @@ a.hub-card:hover {
   font-size: 0.95rem;
   line-height: 1.4;
   max-width: 85%;
+  white-space: pre-line;
 }
 
 .chatbot-msg-bot {
