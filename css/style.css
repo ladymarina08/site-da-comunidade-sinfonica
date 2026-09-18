@@ -207,7 +207,8 @@ p {
 }
 
 .main-nav.open {
-  max-height: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .main-nav a {
@@ -1221,6 +1222,9 @@ a.hub-card:hover {
   .main-nav {
     position: static;
     flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 4px;
     max-height: none;
     overflow: visible;
     background: transparent;
