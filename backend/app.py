@@ -243,10 +243,10 @@ def enviar_email(destinatario: str, assunto: str, html: str) -> bool:
     if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
         mensagem = f"[email simulado] Para: {destinatario} | Assunto: {assunto}\n{html}"
         try:
-            print(mensagem)
+            print(mensagem, flush=True)
         except UnicodeEncodeError:
             # console do Windows (cp1252) não exibe alguns emojis — imprime sem eles
-            print(mensagem.encode("ascii", "ignore").decode("ascii"))
+            print(mensagem.encode("ascii", "ignore").decode("ascii"), flush=True)
         return True
 
     corpo = json.dumps(
