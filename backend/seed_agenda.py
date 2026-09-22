@@ -30,13 +30,57 @@ SHOWS = [
     ),
 
     ("Anette Olzon", "Teatro Ney Soares", "Belo Horizonte/MG", "2026-09-24", "", "Com orquestra"),
+    ("Lumynox", "Devil's Pub", "Sorocaba/SP", "2026-09-25", "21:00", "Tributo a Nightwish"),
     ("Anette Olzon", "Teatro APCD", "Santana/SP", "2026-09-26", "", "Com orquestra"),
+    (
+        "Pride",
+        "Casarão do Benfica",
+        "Fortaleza/CE",
+        "2026-09-26",
+        "",
+        "Encontro dos Tributos — tributo a Andre Matos (Angra e Shaman). Ingressos pelo Instagram @pridetributee",
+    ),
+    (
+        "Ghostlight",
+        "Casarão do Benfica",
+        "Fortaleza/CE",
+        "2026-09-26",
+        "",
+        "Encontro dos Tributos — tributo a Avantasia. Ingressos pelo Instagram @pridetributee",
+    ),
+    (
+        "Metalwar",
+        "Casarão do Benfica",
+        "Fortaleza/CE",
+        "2026-09-26",
+        "",
+        "Encontro dos Tributos — tributo a Manowar. Ingressos pelo Instagram @pridetributee",
+    ),
+    (
+        "Dio's Legacy",
+        "Casarão do Benfica",
+        "Fortaleza/CE",
+        "2026-09-26",
+        "",
+        "Encontro dos Tributos — tributo a Dio. Ingressos pelo Instagram @pridetributee",
+    ),
+    (
+        "Cinetose",
+        "Casarão do Benfica",
+        "Fortaleza/CE",
+        "2026-09-26",
+        "",
+        "Encontro dos Tributos — Trash Metal. Ingressos pelo Instagram @pridetributee",
+    ),
     ("Anette Olzon", "Teatro Clara Nunes", "Rio de Janeiro/RJ", "2026-09-29", "", "Com orquestra"),
+    ("Sitra Ahra", "Cineteatro São Luiz", "Fortaleza/CE", "2026-09-30", "", "V Sinistro Fest — com orquestra"),
+
+    ("Far From Heaven", "Espetinho Perus", "Perus/SP", "2026-10-02", "", "Evanescence Tributo"),
 
     ("Santo Graal", "St Patrick Tatuapé", "Tatuapé/SP", "2026-10-11", "", "Autoral"),
-    ("Lumynox", "St Patrick Tatuapé", "Tatuapé/SP", "2026-10-11", "", "Tributo a Nightwish"),
+    ("Loreley", "St Patrick Tatuapé", "Tatuapé/SP", "2026-10-11", "", "Sirenia"),
 
-    ("After Forever", "Tokio Marine Hall", "São Paulo/SP", "2026-10-16", "", ""),
+    ("The Gathering", "Áudio", "São Paulo/SP", "2026-10-15", "", ""),
 
     ("Roy Khan", "Carioca Club", "Pinheiros/SP", "2026-10-17", "", ""),
     ("Roy Khan", "Armazém 14", "Recife/PE", "2026-10-18", "", ""),
@@ -44,10 +88,25 @@ SHOWS = [
     ("Roy Khan", "Tork 'N Roll", "Curitiba/PR", "2026-10-24", "", ""),
     ("Roy Khan", "Opinião", "Porto Alegre/RS", "2026-10-25", "", ""),
 
+    ("Far From Heaven", "St. Patrick Pub", "Tatuapé/SP", "2026-10-30", "", "Evanescence Tributo"),
+
     ("Arena 89 Halloween Fest", "Arena Galeria", "República/SP", "2026-10-31", "", "Line-up surpresa"),
+    (
+        "Far From Heaven",
+        "Downtown Metal Fest — Old Town English Pub",
+        "Santo André/SP",
+        "2026-10-31",
+        "",
+        "Evanescence Tributo — Downtown Metal Fest (tarde)",
+    ),
 
     ("Darkwish", "A confirmar", "Brasília/DF", "2026-11-20", "", "Nightwish Party"),
     ("Darkwish", "De Leon Music Pub", "Goiânia/GO", "2026-11-21", "", "Nightwish Party"),
+    ("Maldigo.", "Havana Iracema", "Fortaleza/CE", "2026-11-21", "", "Creep Show"),
+    ("The Watchman", "Woodstock Discos", "São Paulo/SP", "2026-11-21", "", "Autoral"),
+    ("Lybrian", "Woodstock Discos", "São Paulo/SP", "2026-11-21", "", "Autoral"),
+
+    ("Darkwish", "Madame", "Bela Vista/SP", "2026-11-29", "", "Show Especial"),
 
     ("Tarja Turunen", "Terra SP", "Campo Grande/SP", "2026-12-05", "", "Spirit Christmas"),
 
@@ -58,6 +117,11 @@ SHOWS = [
 
     ("Liberation Festival", "A confirmar", "São Paulo/SP", "2026-12-12", "", ""),
     ("Liberation Festival", "A confirmar", "São Paulo/SP", "2026-12-13", "", ""),
+
+    ("Lumynox", "Devil's Pub", "Sorocaba/SP", "2026-12-20", "", "Tributo a Nightwish"),
+    ("SymphoniCore", "JAI Club", "São Paulo/SP", "2026-12-20", "", "Estreia"),
+
+    ("Lumynox", "Cervejista Pub Rock Bar", "Indaiatuba/SP", "2027-01-09", "", "Tributo a Nightwish"),
 ]
 
 
