@@ -762,7 +762,7 @@ main {
 }
 
 .mural-avisos {
-  max-width: var(--max-width);
+  max-width: 700px;
   margin: 20px auto 40px;
   padding: 36px 26px;
   background: linear-gradient(160deg, #241209, #170b05);
@@ -776,7 +776,7 @@ main {
 
 .recados-lista {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 38px 24px;
 }
 
