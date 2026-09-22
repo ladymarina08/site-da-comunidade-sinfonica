@@ -150,6 +150,19 @@ def init_db() -> None:
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS recados (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                titulo TEXT NOT NULL,
+                corpo TEXT NOT NULL,
+                criado_por INTEGER,
+                criado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (criado_por) REFERENCES usuarios(id)
+            )
+            """
+        )
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS perguntas_chatbot (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 usuario_id INTEGER,
@@ -665,6 +678,74 @@ def listar_perguntas_chatbot():
             """
         ).fetchall()
     return jsonify(ok=True, perguntas=[dict(linha) for linha in linhas])
+
+
+# =====================================================
+# API de recados e anúncios
+# (leitura: qualquer usuário logado / escrita: só admin)
+# =====================================================
+
+@app.get("/api/recados")
+@requer_login
+def listar_recados():
+    with get_db() as conn:
+        linhas = conn.execute(
+            "SELECT id, titulo, corpo, criado_em FROM recados ORDER BY criado_em DESC"
+        ).fetchall()
+    return jsonify(ok=True, recados=[dict(linha) for linha in linhas])
+
+
+@app.post("/api/recados")
+@requer_admin
+def criar_recado():
+    dados = request.get_json(silent=True) or {}
+    titulo = (dados.get("titulo") or "").strip()
+    corpo = (dados.get("corpo") or "").strip()
+
+    if not titulo or not corpo:
+        return jsonify(ok=False, erro="Preencha título e conteúdo."), 400
+
+    usuario = usuario_atual()
+    with get_db() as conn:
+        cursor = conn.execute(
+            "INSERT INTO recados (titulo, corpo, criado_por) VALUES (?, ?, ?)",
+            (titulo, corpo, usuario["id"]),
+        )
+        recado_id = cursor.lastrowid
+        criado_em = conn.execute("SELECT criado_em FROM recados WHERE id = ?", (recado_id,)).fetchone()[
+            "criado_em"
+        ]
+
+    return jsonify(ok=True, recado={"id": recado_id, "titulo": titulo, "corpo": corpo, "criado_em": criado_em})
+
+
+@app.put("/api/recados/<int:recado_id>")
+@requer_admin
+def editar_recado(recado_id):
+    dados = request.get_json(silent=True) or {}
+    titulo = (dados.get("titulo") or "").strip()
+    corpo = (dados.get("corpo") or "").strip()
+
+    if not titulo or not corpo:
+        return jsonify(ok=False, erro="Preencha título e conteúdo."), 400
+
+    with get_db() as conn:
+        cursor = conn.execute("UPDATE recados SET titulo = ?, corpo = ? WHERE id = ?", (titulo, corpo, recado_id))
+        if cursor.rowcount == 0:
+            return jsonify(ok=False, erro="Recado não encontrado."), 404
+        criado_em = conn.execute("SELECT criado_em FROM recados WHERE id = ?", (recado_id,)).fetchone()[
+            "criado_em"
+        ]
+
+    return jsonify(ok=True, recado={"id": recado_id, "titulo": titulo, "corpo": corpo, "criado_em": criado_em})
+
+
+@app.delete("/api/recados/<int:recado_id>")
+@requer_admin
+def excluir_recado(recado_id):
+    with get_db() as conn:
+        conn.execute("DELETE FROM recados WHERE id = ?", (recado_id,))
+    return jsonify(ok=True)
 
 
 # =====================================================

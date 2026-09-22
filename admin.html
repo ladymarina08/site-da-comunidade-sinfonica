@@ -55,6 +55,25 @@
     </section>
 
     <section class="admin-section">
+      <h2 id="recadoFormTitulo">Novo recado</h2>
+      <form class="admin-form" id="recadoForm">
+        <label for="recadoTitulo">Título</label>
+        <input type="text" id="recadoTitulo" required />
+        <label for="recadoCorpo">Conteúdo</label>
+        <textarea id="recadoCorpo" rows="6" placeholder="Escreva o recado ou anúncio..." required></textarea>
+        <div class="admin-form-acoes">
+          <button type="submit" class="btn btn-primary" id="recadoSubmitBtn">Publicar recado</button>
+          <a href="#" class="link-muted" id="recadoCancelarEdicao" hidden>Cancelar edição</a>
+        </div>
+        <p class="form-message" id="recadoMsg" role="status"></p>
+      </form>
+
+      <div class="admin-list" id="recadosAdminList">
+        <p class="empty-state">Carregando recados...</p>
+      </div>
+    </section>
+
+    <section class="admin-section">
       <h2 id="showFormTitulo">Novo show</h2>
       <form class="admin-form" id="showForm">
         <div class="form-grid">

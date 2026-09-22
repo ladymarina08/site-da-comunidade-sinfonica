@@ -9,13 +9,14 @@ Site (HTML + CSS + JS puro no front, backend em Python/Flask) para a Comunidade 
 - `esqueci-senha.html` — Pedir link de redefinição de senha por e-mail
 - `redefinir-senha.html` — Criar senha nova (acessada pelo link do e-mail)
 - `inicio.html` — Página inicial / hub (**exige login**) — pra onde o login e o cadastro
-  redirecionam; reúne links pra Agenda, Bandas, Playlists, Sobre e Meu Perfil
+  redirecionam; reúne links pra Agenda, Bandas, Playlists e Sobre, além da própria seção de
+  Recados (dados vêm do backend)
 - `agenda.html` — Agenda de shows (**exige login**, dados vêm do backend)
 - `bandas.html` — Bandas da comunidade (**exige login**, dados vêm do backend)
 - `playlists.html` — Playlists da comunidade, embeds do Spotify (**exige login**)
 - `sobre.html` — Sobre a comunidade + redes sociais (**exige login**)
 - `perfil.html` — Meu Perfil: editar nome/e-mail e trocar a senha (**exige login**)
-- `admin.html` — Painel para cadastrar/excluir shows e bandas (**exige ser admin**)
+- `admin.html` — Painel para cadastrar/excluir shows, bandas e recados (**exige ser admin**)
 
 ## Como adicionar/trocar uma playlist do Spotify
 

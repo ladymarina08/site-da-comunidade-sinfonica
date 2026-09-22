@@ -748,6 +748,51 @@ main {
   text-decoration: none;
 }
 
+/* ---------- Recados e anúncios ---------- */
+
+.inicio-recados {
+  max-width: 640px;
+  margin: 10px auto 0;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.inicio-recados p {
+  color: var(--text-muted);
+}
+
+.recados-lista {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 10px 20px 20px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.recado-card {
+  background: linear-gradient(135deg, var(--black-3), var(--black-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.recado-card h2 {
+  margin-bottom: 4px;
+}
+
+.recado-data {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.recado-corpo {
+  color: var(--white);
+  white-space: pre-line;
+  margin: 0;
+}
+
 /* ---------- Bandas da comunidade ---------- */
 
 .bands-grid {

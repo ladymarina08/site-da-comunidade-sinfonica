@@ -510,6 +510,43 @@ async function carregarBandas() {
   dados.bandas.forEach((banda) => grid.appendChild(montarCardBanda(banda)));
 }
 
+// ---------- Recados e anúncios (exibição pública na tela de Início) ----------
+
+function montarCardRecado(recado) {
+  const artigo = document.createElement('article');
+  artigo.className = 'recado-card';
+
+  const titulo = document.createElement('h2');
+  titulo.textContent = recado.titulo;
+
+  const data = document.createElement('p');
+  data.className = 'recado-data';
+  data.textContent = formatarDataCadastro(recado.criado_em);
+
+  const corpo = document.createElement('p');
+  corpo.className = 'recado-corpo';
+  corpo.textContent = recado.corpo;
+
+  artigo.append(titulo, data, corpo);
+  return artigo;
+}
+
+async function carregarRecados() {
+  const lista = document.getElementById('recadosLista');
+  const { status, dados } = await chamarApi('/api/recados');
+  lista.innerHTML = '';
+
+  if (status !== 200 || !dados.ok) {
+    lista.innerHTML = '<p class="empty-state">Não foi possível carregar os recados.</p>';
+    return;
+  }
+  if (dados.recados.length === 0) {
+    lista.innerHTML = '<p class="empty-state">Nenhum recado publicado ainda.</p>';
+    return;
+  }
+  dados.recados.forEach((recado) => lista.appendChild(montarCardRecado(recado)));
+}
+
 // ---------- Painel de administração (admin.html) ----------
 // Os formulários "Novo show" / "Nova banda" são reaproveitados pra edição:
 // clicar em "Editar" preenche os campos e troca o botão pra "Salvar
@@ -821,6 +858,116 @@ if (bandaForm) {
   });
 }
 
+const recadoForm = document.getElementById('recadoForm');
+const recadoMsg = document.getElementById('recadoMsg');
+const recadosAdminList = document.getElementById('recadosAdminList');
+const recadoSubmitBtn = document.getElementById('recadoSubmitBtn');
+const recadoCancelarEdicao = document.getElementById('recadoCancelarEdicao');
+const recadoFormTitulo = document.getElementById('recadoFormTitulo');
+
+let editandoRecadoId = null;
+
+function iniciarEdicaoRecado(recado) {
+  editandoRecadoId = recado.id;
+  document.getElementById('recadoTitulo').value = recado.titulo;
+  document.getElementById('recadoCorpo').value = recado.corpo;
+
+  recadoSubmitBtn.textContent = 'Salvar alterações';
+  recadoFormTitulo.textContent = 'Editar recado';
+  recadoCancelarEdicao.hidden = false;
+  recadoMsg.classList.remove('show');
+  recadoForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelarEdicaoRecado() {
+  editandoRecadoId = null;
+  recadoForm.reset();
+  recadoSubmitBtn.textContent = 'Publicar recado';
+  recadoFormTitulo.textContent = 'Novo recado';
+  recadoCancelarEdicao.hidden = true;
+  recadoMsg.classList.remove('show');
+}
+
+if (recadoCancelarEdicao) {
+  recadoCancelarEdicao.addEventListener('click', (event) => {
+    event.preventDefault();
+    cancelarEdicaoRecado();
+  });
+}
+
+function montarItemAdminRecado(recado) {
+  const item = document.createElement('div');
+  item.className = 'admin-list-item';
+
+  const info = document.createElement('div');
+  info.className = 'info';
+  const tituloForte = document.createElement('strong');
+  tituloForte.textContent = recado.titulo;
+  info.appendChild(tituloForte);
+  info.append(` — ${formatarDataCadastro(recado.criado_em)}`);
+
+  const acoes = document.createElement('div');
+  acoes.className = 'admin-list-acoes';
+
+  const editar = document.createElement('button');
+  editar.type = 'button';
+  editar.className = 'btn btn-outline';
+  editar.textContent = 'Editar';
+  editar.addEventListener('click', () => iniciarEdicaoRecado(recado));
+
+  const excluir = document.createElement('button');
+  excluir.type = 'button';
+  excluir.className = 'btn btn-danger';
+  excluir.textContent = 'Excluir';
+  excluir.addEventListener('click', async () => {
+    if (!confirm(`Excluir o recado "${recado.titulo}"?`)) return;
+    if (editandoRecadoId === recado.id) cancelarEdicaoRecado();
+    await chamarApi(`/api/recados/${recado.id}`, { method: 'DELETE' });
+    carregarRecadosAdmin();
+  });
+
+  acoes.append(editar, excluir);
+  item.append(info, acoes);
+  return item;
+}
+
+async function carregarRecadosAdmin() {
+  const { status, dados } = await chamarApi('/api/recados');
+  recadosAdminList.innerHTML = '';
+
+  if (status !== 200 || !dados.ok || dados.recados.length === 0) {
+    recadosAdminList.innerHTML = '<p class="empty-state">Nenhum recado publicado ainda.</p>';
+    return;
+  }
+  dados.recados.forEach((recado) => recadosAdminList.appendChild(montarItemAdminRecado(recado)));
+}
+
+if (recadoForm) {
+  recadoForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const corpo = {
+      titulo: document.getElementById('recadoTitulo').value,
+      corpo: document.getElementById('recadoCorpo').value,
+    };
+
+    const editando = editandoRecadoId !== null;
+    const { status, dados } = await chamarApi(
+      editando ? `/api/recados/${editandoRecadoId}` : '/api/recados',
+      { method: editando ? 'PUT' : 'POST', body: JSON.stringify(corpo) }
+    );
+
+    recadoMsg.classList.add('show');
+    if (status === 200 && dados.ok) {
+      recadoMsg.textContent = editando ? 'Recado atualizado!' : 'Recado publicado!';
+      cancelarEdicaoRecado();
+      carregarRecadosAdmin();
+    } else {
+      recadoMsg.textContent = dados.erro || 'Não foi possível salvar o recado.';
+    }
+  });
+}
+
 // ---------- Meu Perfil (perfil.html) ----------
 
 function formatarDataCadastro(timestampSql) {
@@ -1019,10 +1166,12 @@ if (mainNav) {
 
     if (document.getElementById('showsGrid')) carregarAgenda();
     if (document.getElementById('bandsGrid')) carregarBandas();
+    if (document.getElementById('recadosLista')) carregarRecados();
     if (usuariosList) carregarUsuarios();
     if (perguntasChatbotList) carregarPerguntasChatbot();
     if (showsList) carregarShowsAdmin();
     if (bandasList) carregarBandasAdmin();
+    if (recadosAdminList) carregarRecadosAdmin();
     if (perfilForm) preencherPerfil(usuario);
     if (document.getElementById('lembretesList')) carregarLembretes();
   });
