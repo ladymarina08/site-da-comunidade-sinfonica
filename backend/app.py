@@ -279,8 +279,12 @@ def enviar_email(destinatario: str, assunto: str, html: str) -> bool:
         return False
 
 
+def _data_br(data_iso: str) -> str:
+    return "/".join(reversed(data_iso.split("-")))
+
+
 def _texto_lembrete(usuario_nome: str, show: sqlite3.Row, quando: str) -> tuple[str, str]:
-    data_br = "/".join(reversed(show["data"].split("-")))
+    data_br = _data_br(show["data"])
     local_texto = f'{show["local"]}, {show["cidade"]}'
     horario_texto = f' às {show["horario"]}' if show["horario"] else ""
     quando_texto = "é amanhã" if quando == "amanha" else "é hoje"
@@ -867,6 +871,33 @@ def excluir_show(show_id):
     return jsonify(ok=True)
 
 
+@app.post("/api/shows/<int:show_id>/avisar")
+@requer_admin
+def avisar_show(show_id):
+    with get_db() as conn:
+        show = conn.execute(
+            "SELECT banda, local, cidade, data, horario FROM shows WHERE id = ?", (show_id,)
+        ).fetchone()
+        if not show:
+            return jsonify(ok=False, erro="Show não encontrado."), 404
+        emails = [linha["email"] for linha in conn.execute("SELECT email FROM usuarios").fetchall()]
+
+    horario_texto = f' às {show["horario"]}' if show["horario"] else ""
+    link_agenda = f"{request.url_root.rstrip('/')}/agenda.html"
+    assunto = f'Novo show na agenda: {show["banda"]}'
+    html = f"""
+    <p>Novo show adicionado na agenda da Comunidade Sinfônica:</p>
+    <p><strong>{show["banda"]}</strong><br>
+    {_data_br(show["data"])}{horario_texto}<br>
+    {show["local"]}, {show["cidade"]}</p>
+    <p><a href="{link_agenda}">Ver na Agenda e ativar o lembrete</a></p>
+    <p>— Comunidade Sinfônica</p>
+    """
+
+    enviados = sum(1 for email in emails if enviar_email(email, assunto, html))
+    return jsonify(ok=True, enviados=enviados, total=len(emails))
+
+
 # =====================================================
 # API de lembretes de show ("Lembrar-me" na agenda)
 # =====================================================
@@ -1019,6 +1050,28 @@ def excluir_banda(banda_id):
     with get_db() as conn:
         conn.execute("DELETE FROM bandas WHERE id = ?", (banda_id,))
     return jsonify(ok=True)
+
+
+@app.post("/api/bandas/<int:banda_id>/avisar")
+@requer_admin
+def avisar_banda(banda_id):
+    with get_db() as conn:
+        banda = conn.execute("SELECT nome, instagram FROM bandas WHERE id = ?", (banda_id,)).fetchone()
+        if not banda:
+            return jsonify(ok=False, erro="Banda não encontrada."), 404
+        emails = [linha["email"] for linha in conn.execute("SELECT email FROM usuarios").fetchall()]
+
+    nome_banda = re.sub(r"\s*\([^)]*\)\s*$", "", banda["nome"]).strip()
+    instagram_texto = f' {banda["instagram"]}' if banda["instagram"] else ""
+    assunto = f"Nova banda na comunidade: {nome_banda}"
+    html = f"""
+    <p>A banda <strong>{nome_banda}</strong> agora faz parte da Comunidade, siga o perfil deles
+    pra ficar por dentro de todas as atualizações:{instagram_texto}</p>
+    <p>— Comunidade Sinfônica</p>
+    """
+
+    enviados = sum(1 for email in emails if enviar_email(email, assunto, html))
+    return jsonify(ok=True, enviados=enviados, total=len(emails))
 
 
 # =====================================================

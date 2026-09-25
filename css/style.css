@@ -617,7 +617,8 @@ main {
   font-size: 0.95rem;
 }
 
-.agenda-filtro select {
+.agenda-filtro select,
+.agenda-filtro input[type="text"] {
   padding: 10px 14px;
   background: var(--black);
   border: 1px solid var(--border);
@@ -625,10 +626,14 @@ main {
   color: var(--white);
   font-family: var(--font-body);
   font-size: 1rem;
+}
+
+.agenda-filtro select {
   cursor: pointer;
 }
 
-.agenda-filtro select:focus {
+.agenda-filtro select:focus,
+.agenda-filtro input[type="text"]:focus {
   outline: none;
   border-color: var(--gold);
   box-shadow: 0 0 0 3px var(--gold-glow);

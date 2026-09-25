@@ -38,6 +38,19 @@
       <p>Conheça os projetos que formam a Comunidade Sinfônica.</p>
     </section>
 
+    <section class="agenda-filtro container">
+      <label for="bandaFiltroBusca">Buscar:</label>
+      <input type="text" id="bandaFiltroBusca" placeholder="Nome da banda..." autocomplete="off" />
+      <label for="bandaFiltroEstado">Estado:</label>
+      <select id="bandaFiltroEstado">
+        <option value="">Todos os estados</option>
+      </select>
+      <label for="bandaFiltroCategoria">Categoria:</label>
+      <select id="bandaFiltroCategoria">
+        <option value="">Todas as categorias</option>
+      </select>
+    </section>
+
     <!-- As bandas são carregadas do backend (js/script.js -> carregarBandas()). -->
     <!-- Para cadastrar bandas novas, entre como admin e use admin.html. -->
     <section class="bands-grid" id="bandsGrid">

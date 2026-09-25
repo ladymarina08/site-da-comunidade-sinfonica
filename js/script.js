@@ -460,6 +460,28 @@ const ICONES_BANDA = [
   '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M469.184 814.464c0.64-26.432-10.752-88.832 32.96-132.928 44.992-45.504 137.024-58.624 143.04-63.68 16.256-14.784 22.848-33.728 27.584-53.12-45.504 15.04-110.528-34.176-148.48-114.24-23.936-50.56-10.304-123.264-2.56-160.576-26.88-6.848-53.248-4.608-80.064 17.984-21.696 18.368-40.64 78.272-86.208 124.224-64 64.64-153.92 65.664-190.336 86.464-13.696 6.272-31.04 18.88-47.808 35.776a229.76 229.76 0 0 0-24 28.672 171.2 171.2 0 0 0 15.488 225.856l69.312 68.608a171.52 171.52 0 0 0 220.096 17.728c9.984-6.016 21.888-14.976 33.856-26.176 24.32-22.72 40.064-46.208 37.12-54.592z" fill="currentColor"/><path d="M455.616 635.2l-48.384-47.808 432.384-426.112 37.632 37.248z" fill="currentColor"/><path d="M846.592 256.512l-78.784-43.968 124.8-115.648 73.344 38.784z" fill="currentColor"/></svg>', // guitarra elétrica
 ];
 
+const CATEGORIAS_BANDA = [
+  { rotulo: 'Autoral', chave: 'autoral' },
+  { rotulo: 'Cover de Nightwish', chave: 'nightwish' },
+  { rotulo: 'Cover de Epica', chave: 'epica' },
+  { rotulo: 'Cover de Lacuna Coil', chave: 'lacuna coil' },
+  { rotulo: 'Cover de Sirenia', chave: 'sirenia' },
+  { rotulo: 'Cover de Evanescence', chave: 'evanescence' },
+];
+
+function extrairEstadoBanda(nome) {
+  const resultado = nome.match(/\(([^)]+)\)\s*$/);
+  return resultado ? resultado[1].trim() : '';
+}
+
+function bandaTemCategoria(banda, chave) {
+  return (banda.genero || '').toLowerCase().includes(chave);
+}
+
+function semAcento(texto) {
+  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 function montarCardBanda(banda) {
   const artigo = document.createElement('article');
   artigo.className = 'band-card';
@@ -494,6 +516,56 @@ function montarCardBanda(banda) {
   return artigo;
 }
 
+let bandasCache = [];
+
+function renderizarBandas(lista) {
+  const grid = document.getElementById('bandsGrid');
+  grid.innerHTML = '';
+
+  if (lista.length === 0) {
+    grid.innerHTML = '<p class="empty-state">Nenhuma banda encontrada.</p>';
+    return;
+  }
+  lista.forEach((banda) => grid.appendChild(montarCardBanda(banda)));
+}
+
+function aplicarFiltrosBanda() {
+  const buscaInput = document.getElementById('bandaFiltroBusca');
+  const estadoSelect = document.getElementById('bandaFiltroEstado');
+  const categoriaSelect = document.getElementById('bandaFiltroCategoria');
+  const busca = buscaInput ? semAcento(buscaInput.value.trim().toLowerCase()) : '';
+  const estado = estadoSelect ? estadoSelect.value : '';
+  const categoria = categoriaSelect ? categoriaSelect.value : '';
+
+  const filtradas = bandasCache.filter((banda) => {
+    const passaBusca = !busca || semAcento(banda.nome.toLowerCase()).startsWith(busca);
+    const passaEstado = !estado || extrairEstadoBanda(banda.nome) === estado;
+    const passaCategoria = !categoria || bandaTemCategoria(banda, categoria);
+    return passaBusca && passaEstado && passaCategoria;
+  });
+  renderizarBandas(filtradas);
+}
+
+function popularFiltrosBanda(lista) {
+  const buscaInput = document.getElementById('bandaFiltroBusca');
+  const estadoSelect = document.getElementById('bandaFiltroEstado');
+  const categoriaSelect = document.getElementById('bandaFiltroCategoria');
+  if (!buscaInput || !estadoSelect || !categoriaSelect) return;
+
+  const estados = [...new Set(lista.map((banda) => extrairEstadoBanda(banda.nome)).filter(Boolean))].sort();
+  estadoSelect.innerHTML =
+    '<option value="">Todos os estados</option>' +
+    estados.map((uf) => `<option value="${uf}">${uf}</option>`).join('');
+
+  categoriaSelect.innerHTML =
+    '<option value="">Todas as categorias</option>' +
+    CATEGORIAS_BANDA.map((cat) => `<option value="${cat.chave}">${cat.rotulo}</option>`).join('');
+
+  buscaInput.addEventListener('input', aplicarFiltrosBanda);
+  estadoSelect.addEventListener('change', aplicarFiltrosBanda);
+  categoriaSelect.addEventListener('change', aplicarFiltrosBanda);
+}
+
 async function carregarBandas() {
   const grid = document.getElementById('bandsGrid');
   const { status, dados } = await chamarApi('/api/bandas');
@@ -507,7 +579,10 @@ async function carregarBandas() {
     grid.innerHTML = '<p class="empty-state">Nenhuma banda cadastrada ainda.</p>';
     return;
   }
-  dados.bandas.forEach((banda) => grid.appendChild(montarCardBanda(banda)));
+
+  bandasCache = dados.bandas;
+  popularFiltrosBanda(bandasCache);
+  renderizarBandas(bandasCache);
 }
 
 // ---------- Recados e anúncios (exibição pública na tela de Início) ----------
@@ -685,6 +760,18 @@ function montarItemAdminShow(show) {
   editar.textContent = 'Editar';
   editar.addEventListener('click', () => iniciarEdicaoShow(show));
 
+  const avisar = document.createElement('button');
+  avisar.type = 'button';
+  avisar.className = 'btn btn-outline';
+  avisar.textContent = 'Disparar aviso';
+  avisar.addEventListener('click', async () => {
+    if (!confirm(`Enviar e-mail avisando sobre o show de "${show.banda}" pra todos os usuários cadastrados?`)) return;
+    avisar.disabled = true;
+    const { status, dados } = await chamarApi(`/api/shows/${show.id}/avisar`, { method: 'POST' });
+    avisar.disabled = false;
+    alert(status === 200 && dados.ok ? `Aviso enviado pra ${dados.enviados} de ${dados.total} usuário(s).` : 'Não foi possível enviar o aviso.');
+  });
+
   const excluir = document.createElement('button');
   excluir.type = 'button';
   excluir.className = 'btn btn-danger';
@@ -696,7 +783,7 @@ function montarItemAdminShow(show) {
     carregarShowsAdmin();
   });
 
-  acoes.append(editar, excluir);
+  acoes.append(editar, avisar, excluir);
   item.append(info, acoes);
   return item;
 }
@@ -802,6 +889,18 @@ function montarItemAdminBanda(banda) {
   editar.textContent = 'Editar';
   editar.addEventListener('click', () => iniciarEdicaoBanda(banda));
 
+  const avisar = document.createElement('button');
+  avisar.type = 'button';
+  avisar.className = 'btn btn-outline';
+  avisar.textContent = 'Disparar aviso';
+  avisar.addEventListener('click', async () => {
+    if (!confirm(`Enviar e-mail avisando sobre a banda "${banda.nome}" pra todos os usuários cadastrados?`)) return;
+    avisar.disabled = true;
+    const { status, dados } = await chamarApi(`/api/bandas/${banda.id}/avisar`, { method: 'POST' });
+    avisar.disabled = false;
+    alert(status === 200 && dados.ok ? `Aviso enviado pra ${dados.enviados} de ${dados.total} usuário(s).` : 'Não foi possível enviar o aviso.');
+  });
+
   const excluir = document.createElement('button');
   excluir.type = 'button';
   excluir.className = 'btn btn-danger';
@@ -813,7 +912,7 @@ function montarItemAdminBanda(banda) {
     carregarBandasAdmin();
   });
 
-  acoes.append(editar, excluir);
+  acoes.append(editar, avisar, excluir);
   item.append(info, acoes);
   return item;
 }
