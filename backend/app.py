@@ -1062,11 +1062,15 @@ def avisar_banda(banda_id):
         emails = [linha["email"] for linha in conn.execute("SELECT email FROM usuarios").fetchall()]
 
     nome_banda = re.sub(r"\s*\([^)]*\)\s*$", "", banda["nome"]).strip()
-    instagram_texto = f' {banda["instagram"]}' if banda["instagram"] else ""
+    if banda["instagram"]:
+        link_instagram = f'https://instagram.com/{banda["instagram"].lstrip("@")}'
+        instagram_texto = f' <a href="{link_instagram}">{banda["instagram"]}</a>'
+    else:
+        instagram_texto = ""
     assunto = f"Nova banda na comunidade: {nome_banda}"
     html = f"""
     <p>A banda <strong>{nome_banda}</strong> agora faz parte da Comunidade, siga o perfil deles
-    pra ficar por dentro de todas as atualizações:{instagram_texto}</p>
+    no Instagram pra ficar por dentro de todas as atualizações:{instagram_texto}</p>
     <p>— Comunidade Sinfônica</p>
     """
 
