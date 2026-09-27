@@ -513,6 +513,12 @@ function montarCardBanda(banda) {
     artigo.appendChild(instagram);
   }
 
+  const verPerfil = document.createElement('a');
+  verPerfil.className = 'link-gold band-ver-perfil';
+  verPerfil.href = `banda.html?id=${banda.id}`;
+  verPerfil.textContent = 'Ver perfil da banda →';
+  artigo.appendChild(verPerfil);
+
   return artigo;
 }
 
@@ -583,6 +589,136 @@ async function carregarBandas() {
   bandasCache = dados.bandas;
   popularFiltrosBanda(bandasCache);
   renderizarBandas(bandasCache);
+}
+
+// ---------- Perfil de uma banda (banda.html) ----------
+
+function montarCardIntegrante(integrante) {
+  const card = document.createElement('article');
+  card.className = 'integrante-card';
+
+  if (integrante.foto_url) {
+    const foto = document.createElement('img');
+    foto.className = 'integrante-foto';
+    foto.src = integrante.foto_url;
+    foto.alt = integrante.nome;
+    card.appendChild(foto);
+  } else {
+    const semFoto = document.createElement('div');
+    semFoto.className = 'integrante-sem-foto';
+    semFoto.textContent = '🎤';
+    card.appendChild(semFoto);
+  }
+
+  const nome = document.createElement('strong');
+  nome.textContent = integrante.nome;
+  card.appendChild(nome);
+
+  if (integrante.funcao) {
+    const funcao = document.createElement('span');
+    funcao.textContent = integrante.funcao;
+    card.appendChild(funcao);
+  }
+
+  return card;
+}
+
+function montarCardContato(href, texto, externo) {
+  const link = document.createElement('a');
+  link.className = 'contato-card';
+  link.href = href;
+  if (externo) {
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+  }
+  link.textContent = texto;
+  return link;
+}
+
+async function carregarPerfilBanda() {
+  const conteudo = document.getElementById('bandaConteudo');
+  const id = new URLSearchParams(window.location.search).get('id');
+
+  if (!id) {
+    conteudo.innerHTML = '<p class="empty-state">Banda não encontrada.</p>';
+    return;
+  }
+
+  const [bandaResp, lembretesResp] = await Promise.all([
+    chamarApi(`/api/bandas/${id}`),
+    chamarApi('/api/lembretes'),
+  ]);
+
+  if (bandaResp.status !== 200 || !bandaResp.dados.ok) {
+    conteudo.innerHTML = '<p class="empty-state">Banda não encontrada.</p>';
+    return;
+  }
+
+  const { banda, integrantes, shows } = bandaResp.dados;
+  const idsComLembrete = new Set(
+    lembretesResp.status === 200 && lembretesResp.dados.ok
+      ? lembretesResp.dados.shows.map((show) => show.id)
+      : []
+  );
+
+  document.title = `${banda.nome} — Comunidade Sinfônica`;
+  document.getElementById('bandaNomeTitulo').textContent = banda.nome;
+  document.getElementById('bandaGeneroTexto').textContent = banda.genero;
+
+  const bioEl = document.getElementById('bandaBio');
+  bioEl.innerHTML = '';
+  const paragrafos = (banda.descricao || '').split('\n').map((linha) => linha.trim()).filter(Boolean);
+  if (paragrafos.length === 0) {
+    bioEl.innerHTML = '<p class="empty-state">Essa banda ainda não tem uma bio cadastrada.</p>';
+  } else {
+    paragrafos.forEach((paragrafo) => {
+      const p = document.createElement('p');
+      p.textContent = paragrafo;
+      bioEl.appendChild(p);
+    });
+  }
+
+  const linkExtra = document.getElementById('bandaLinkExtra');
+  if (banda.link_extra) {
+    linkExtra.href = banda.link_extra;
+    linkExtra.hidden = false;
+  }
+
+  const integrantesEl = document.getElementById('bandaIntegrantes');
+  integrantesEl.innerHTML = '';
+  if (integrantes.length === 0) {
+    integrantesEl.innerHTML = '<p class="empty-state">Nenhum integrante cadastrado ainda.</p>';
+  } else {
+    integrantes.forEach((integrante) => integrantesEl.appendChild(montarCardIntegrante(integrante)));
+  }
+
+  const contatoEl = document.getElementById('bandaContato');
+  contatoEl.innerHTML = '';
+  if (banda.instagram) {
+    contatoEl.appendChild(
+      montarCardContato(`https://instagram.com/${banda.instagram.replace(/^@/, '')}`, `📷 ${banda.instagram}`, true)
+    );
+  }
+  if (banda.email) {
+    contatoEl.appendChild(montarCardContato(`mailto:${banda.email}`, `✉ ${banda.email}`, false));
+  }
+  integrantes
+    .filter((integrante) => integrante.whatsapp)
+    .forEach((integrante) => {
+      const numero = integrante.whatsapp.replace(/\D/g, '');
+      contatoEl.appendChild(montarCardContato(`https://wa.me/${numero}`, `💬 ${integrante.nome}`, true));
+    });
+  if (!contatoEl.hasChildNodes()) {
+    contatoEl.innerHTML = '<p class="empty-state">Nenhum contato cadastrado ainda.</p>';
+  }
+
+  const showsEl = document.getElementById('bandaShows');
+  showsEl.innerHTML = '';
+  if (shows.length === 0) {
+    showsEl.innerHTML = '<p class="empty-state">Nenhum show futuro cadastrado.</p>';
+  } else {
+    shows.forEach((show) => showsEl.appendChild(montarCardShow(show, idsComLembrete.has(show.id))));
+  }
 }
 
 // ---------- Recados e anúncios (exibição pública na tela de Início) ----------
@@ -844,6 +980,8 @@ function iniciarEdicaoBanda(banda) {
   document.getElementById('bandaGenero').value = banda.genero;
   document.getElementById('bandaEmoji').value = banda.emoji || '';
   document.getElementById('bandaInstagram').value = banda.instagram || '';
+  document.getElementById('bandaEmail').value = banda.email || '';
+  document.getElementById('bandaLinkExtra').value = banda.link_extra || '';
   document.getElementById('bandaDescricao').value = banda.descricao || '';
 
   bandaSubmitBtn.textContent = 'Salvar alterações';
@@ -926,6 +1064,15 @@ async function carregarBandasAdmin() {
     return;
   }
   dados.bandas.forEach((banda) => bandasList.appendChild(montarItemAdminBanda(banda)));
+
+  const select = document.getElementById('integranteBandaSelect');
+  if (select) {
+    const selecionada = select.value;
+    select.innerHTML =
+      '<option value="">Selecione uma banda...</option>' +
+      dados.bandas.map((banda) => `<option value="${banda.id}">${banda.nome}</option>`).join('');
+    select.value = selecionada;
+  }
 }
 
 if (bandaForm) {
@@ -937,6 +1084,8 @@ if (bandaForm) {
       genero: document.getElementById('bandaGenero').value,
       emoji: document.getElementById('bandaEmoji').value,
       instagram: document.getElementById('bandaInstagram').value,
+      email: document.getElementById('bandaEmail').value,
+      link_extra: document.getElementById('bandaLinkExtra').value,
       descricao: document.getElementById('bandaDescricao').value,
     };
 
@@ -953,6 +1102,138 @@ if (bandaForm) {
       carregarBandasAdmin();
     } else {
       bandaMsg.textContent = dados.erro || 'Não foi possível salvar a banda.';
+    }
+  });
+}
+
+const integranteBandaSelect = document.getElementById('integranteBandaSelect');
+const integranteForm = document.getElementById('integranteForm');
+const integranteMsg = document.getElementById('integranteMsg');
+const integrantesList = document.getElementById('integrantesList');
+const integranteSubmitBtn = document.getElementById('integranteSubmitBtn');
+const integranteCancelarEdicao = document.getElementById('integranteCancelarEdicao');
+
+let editandoIntegranteId = null;
+
+function iniciarEdicaoIntegrante(integrante) {
+  editandoIntegranteId = integrante.id;
+  document.getElementById('integranteNome').value = integrante.nome;
+  document.getElementById('integranteFuncao').value = integrante.funcao || '';
+  document.getElementById('integranteWhatsapp').value = integrante.whatsapp || '';
+  document.getElementById('integranteFoto').value = integrante.foto_url || '';
+
+  integranteSubmitBtn.textContent = 'Salvar alterações';
+  integranteCancelarEdicao.hidden = false;
+  integranteMsg.classList.remove('show');
+  integranteForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelarEdicaoIntegrante() {
+  editandoIntegranteId = null;
+  integranteForm.reset();
+  integranteSubmitBtn.textContent = 'Adicionar integrante';
+  integranteCancelarEdicao.hidden = true;
+  integranteMsg.classList.remove('show');
+}
+
+if (integranteCancelarEdicao) {
+  integranteCancelarEdicao.addEventListener('click', (event) => {
+    event.preventDefault();
+    cancelarEdicaoIntegrante();
+  });
+}
+
+function montarItemAdminIntegrante(integrante) {
+  const item = document.createElement('div');
+  item.className = 'admin-list-item';
+
+  const info = document.createElement('div');
+  info.className = 'info';
+  const nomeForte = document.createElement('strong');
+  nomeForte.textContent = integrante.nome;
+  info.appendChild(nomeForte);
+  if (integrante.funcao) info.append(` — ${integrante.funcao}`);
+  if (integrante.whatsapp) info.append(` • ${integrante.whatsapp}`);
+
+  const acoes = document.createElement('div');
+  acoes.className = 'admin-list-acoes';
+
+  const editar = document.createElement('button');
+  editar.type = 'button';
+  editar.className = 'btn btn-outline';
+  editar.textContent = 'Editar';
+  editar.addEventListener('click', () => iniciarEdicaoIntegrante(integrante));
+
+  const excluir = document.createElement('button');
+  excluir.type = 'button';
+  excluir.className = 'btn btn-danger';
+  excluir.textContent = 'Excluir';
+  excluir.addEventListener('click', async () => {
+    if (!confirm(`Excluir o integrante "${integrante.nome}"?`)) return;
+    if (editandoIntegranteId === integrante.id) cancelarEdicaoIntegrante();
+    await chamarApi(`/api/integrantes/${integrante.id}`, { method: 'DELETE' });
+    carregarIntegrantesAdmin();
+  });
+
+  acoes.append(editar, excluir);
+  item.append(info, acoes);
+  return item;
+}
+
+async function carregarIntegrantesAdmin() {
+  const bandaId = integranteBandaSelect.value;
+  if (!bandaId) {
+    integrantesList.innerHTML = '<p class="empty-state">Selecione uma banda acima.</p>';
+    return;
+  }
+  const { status, dados } = await chamarApi(`/api/bandas/${bandaId}`);
+  integrantesList.innerHTML = '';
+
+  if (status !== 200 || !dados.ok || dados.integrantes.length === 0) {
+    integrantesList.innerHTML = '<p class="empty-state">Nenhum integrante cadastrado ainda.</p>';
+    return;
+  }
+  dados.integrantes.forEach((integrante) => integrantesList.appendChild(montarItemAdminIntegrante(integrante)));
+}
+
+if (integranteBandaSelect) {
+  integranteBandaSelect.addEventListener('change', () => {
+    cancelarEdicaoIntegrante();
+    carregarIntegrantesAdmin();
+  });
+}
+
+if (integranteForm) {
+  integranteForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const bandaId = integranteBandaSelect.value;
+    if (!bandaId) {
+      integranteMsg.classList.add('show');
+      integranteMsg.textContent = 'Selecione uma banda primeiro.';
+      return;
+    }
+
+    const corpo = {
+      nome: document.getElementById('integranteNome').value,
+      funcao: document.getElementById('integranteFuncao').value,
+      whatsapp: document.getElementById('integranteWhatsapp').value,
+      foto_url: document.getElementById('integranteFoto').value,
+    };
+
+    const editando = editandoIntegranteId !== null;
+    const { status, dados } = await chamarApi(
+      editando ? `/api/integrantes/${editandoIntegranteId}` : `/api/bandas/${bandaId}/integrantes`,
+      { method: editando ? 'PUT' : 'POST', body: JSON.stringify(corpo) }
+    );
+
+    integranteMsg.classList.add('show');
+    if (status === 200 && dados.ok) {
+      integranteMsg.textContent = editando ? 'Integrante atualizado!' : 'Integrante adicionado!';
+      cancelarEdicaoIntegrante();
+      carregarIntegrantesAdmin();
+    } else {
+      integranteMsg.textContent = dados.erro || 'Não foi possível salvar o integrante.';
     }
   });
 }
@@ -1265,6 +1546,7 @@ if (mainNav) {
 
     if (document.getElementById('showsGrid')) carregarAgenda();
     if (document.getElementById('bandsGrid')) carregarBandas();
+    if (document.getElementById('bandaConteudo')) carregarPerfilBanda();
     if (document.getElementById('recadosLista')) carregarRecados();
     if (usuariosList) carregarUsuarios();
     if (perguntasChatbotList) carregarPerguntasChatbot();

@@ -887,6 +887,112 @@ main {
   font-size: 0.95rem;
 }
 
+.band-ver-perfil {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.92rem;
+}
+
+/* ---------- Perfil de uma banda (banda.html) ---------- */
+
+.banda-perfil {
+  max-width: var(--max-width);
+  margin: 10px auto 0;
+  padding: 0 20px 40px;
+}
+
+.banda-bio p {
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
+.banda-link-extra {
+  display: inline-block;
+  margin: 4px 0 30px;
+}
+
+.banda-link-extra[hidden] {
+  display: none;
+}
+
+.banda-perfil h2 {
+  margin-top: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.banda-integrantes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 18px;
+  margin-bottom: 10px;
+}
+
+.integrante-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  background: linear-gradient(160deg, var(--black-3), var(--black-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 12px;
+}
+
+.integrante-foto {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold);
+}
+
+.integrante-sem-foto {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  background: var(--black);
+  border: 2px solid var(--border);
+}
+
+.integrante-card strong {
+  color: var(--gold-soft);
+}
+
+.integrante-card span {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.banda-contato {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.contato-card {
+  display: block;
+  background: linear-gradient(160deg, var(--black-3), var(--black-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  color: var(--white);
+  font-size: 0.95rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.contato-card:hover {
+  box-shadow: 0 0 20px var(--gold-glow);
+  transform: translateY(-2px);
+  color: var(--gold);
+}
+
 /* ---------- Painel de administração ---------- */
 
 .admin-section {

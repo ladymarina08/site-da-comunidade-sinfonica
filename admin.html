@@ -132,9 +132,17 @@
             <label for="bandaInstagram">Instagram</label>
             <input type="text" id="bandaInstagram" placeholder="@usuario" />
           </div>
+          <div>
+            <label for="bandaEmail">E-mail (opcional)</label>
+            <input type="email" id="bandaEmail" placeholder="contato@banda.com" />
+          </div>
+          <div>
+            <label for="bandaLinkExtra">Link de Fotos/Vídeos (opcional)</label>
+            <input type="text" id="bandaLinkExtra" placeholder="https://..." />
+          </div>
         </div>
-        <label for="bandaDescricao">Descrição</label>
-        <textarea id="bandaDescricao" rows="2" placeholder="Breve descrição da banda"></textarea>
+        <label for="bandaDescricao">Descrição / bio (pode ter vários parágrafos)</label>
+        <textarea id="bandaDescricao" rows="4" placeholder="Sobre a banda — cada linha vira um parágrafo na página dela"></textarea>
         <div class="admin-form-acoes">
           <button type="submit" class="btn btn-primary" id="bandaSubmitBtn">Adicionar banda</button>
           <a href="#" class="link-muted" id="bandaCancelarEdicao" hidden>Cancelar edição</a>
@@ -144,6 +152,46 @@
 
       <div class="admin-list" id="bandasList">
         <p class="empty-state">Carregando bandas...</p>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <h2>Integrantes das Bandas</h2>
+      <p class="admin-section-descricao">Gerencia os integrantes que aparecem na página própria de cada banda (clique em "Ver perfil da banda" em Bandas pra ver o resultado).</p>
+
+      <label for="integranteBandaSelect">Banda</label>
+      <select id="integranteBandaSelect">
+        <option value="">Selecione uma banda...</option>
+      </select>
+
+      <form class="admin-form" id="integranteForm">
+        <div class="form-grid">
+          <div>
+            <label for="integranteNome">Nome</label>
+            <input type="text" id="integranteNome" required />
+          </div>
+          <div>
+            <label for="integranteFuncao">Função</label>
+            <input type="text" id="integranteFuncao" placeholder="Vocalista, Guitarrista..." />
+          </div>
+          <div>
+            <label for="integranteWhatsapp">WhatsApp (opcional)</label>
+            <input type="text" id="integranteWhatsapp" placeholder="5551999999999" />
+          </div>
+          <div>
+            <label for="integranteFoto">URL da foto (opcional)</label>
+            <input type="text" id="integranteFoto" placeholder="https://..." />
+          </div>
+        </div>
+        <div class="admin-form-acoes">
+          <button type="submit" class="btn btn-primary" id="integranteSubmitBtn">Adicionar integrante</button>
+          <a href="#" class="link-muted" id="integranteCancelarEdicao" hidden>Cancelar edição</a>
+        </div>
+        <p class="form-message" id="integranteMsg" role="status"></p>
+      </form>
+
+      <div class="admin-list" id="integrantesList">
+        <p class="empty-state">Selecione uma banda acima.</p>
       </div>
     </section>
   </main>

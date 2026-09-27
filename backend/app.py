@@ -21,7 +21,7 @@ import sqlite3
 import threading
 import time
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -133,6 +133,31 @@ def init_db() -> None:
             conn.execute("ALTER TABLE bandas ADD COLUMN instagram TEXT DEFAULT ''")
         except sqlite3.OperationalError:
             pass
+        # Migração leve: bancos criados antes de "email" e "link_extra" existirem
+        # (usados na página própria de cada banda).
+        try:
+            conn.execute("ALTER TABLE bandas ADD COLUMN email TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE bandas ADD COLUMN link_extra TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS integrantes_banda (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                banda_id INTEGER NOT NULL,
+                nome TEXT NOT NULL,
+                funcao TEXT DEFAULT '',
+                whatsapp TEXT DEFAULT '',
+                foto_url TEXT DEFAULT '',
+                ordem INTEGER DEFAULT 0,
+                FOREIGN KEY (banda_id) REFERENCES bandas(id)
+            )
+            """
+        )
 
         conn.execute(
             """
@@ -958,9 +983,48 @@ def excluir_lembrete(show_id):
 def listar_bandas():
     with get_db() as conn:
         linhas = conn.execute(
-            "SELECT id, nome, genero, descricao, emoji, instagram FROM bandas ORDER BY nome"
+            "SELECT id, nome, genero, descricao, emoji, instagram, email, link_extra FROM bandas ORDER BY nome"
         ).fetchall()
     return jsonify(ok=True, bandas=[dict(linha) for linha in linhas])
+
+
+def _shows_da_banda(nome_banda: str, conn: sqlite3.Connection):
+    hoje = date.today().isoformat()
+    nome_base = re.sub(r"\s*\([^)]*\)\s*$", "", nome_banda).strip()
+    return conn.execute(
+        """
+        SELECT banda, local, cidade, data, horario, observacoes FROM shows
+        WHERE (banda = ? OR banda = ?) AND data >= ?
+        ORDER BY data, horario
+        """,
+        (nome_banda, nome_base, hoje),
+    ).fetchall()
+
+
+@app.get("/api/bandas/<int:banda_id>")
+@requer_login
+def obter_banda(banda_id):
+    with get_db() as conn:
+        banda = conn.execute(
+            "SELECT id, nome, genero, descricao, emoji, instagram, email, link_extra FROM bandas WHERE id = ?",
+            (banda_id,),
+        ).fetchone()
+        if not banda:
+            return jsonify(ok=False, erro="Banda não encontrada."), 404
+
+        integrantes = conn.execute(
+            "SELECT id, nome, funcao, whatsapp, foto_url FROM integrantes_banda WHERE banda_id = ? ORDER BY ordem, id",
+            (banda_id,),
+        ).fetchall()
+
+        shows = _shows_da_banda(banda["nome"], conn)
+
+    return jsonify(
+        ok=True,
+        banda=dict(banda),
+        integrantes=[dict(linha) for linha in integrantes],
+        shows=[dict(linha) for linha in shows],
+    )
 
 
 def normalizar_instagram(valor: str) -> str:
@@ -985,6 +1049,8 @@ def criar_banda():
     descricao = (dados.get("descricao") or "").strip()
     emoji = (dados.get("emoji") or "").strip() or "🎵"
     instagram = normalizar_instagram(dados.get("instagram"))
+    email = (dados.get("email") or "").strip()
+    link_extra = (dados.get("link_extra") or "").strip()
 
     if not nome or not genero:
         return jsonify(ok=False, erro="Preencha nome e gênero."), 400
@@ -992,8 +1058,9 @@ def criar_banda():
     usuario = usuario_atual()
     with get_db() as conn:
         cursor = conn.execute(
-            "INSERT INTO bandas (nome, genero, descricao, emoji, instagram, criado_por) VALUES (?, ?, ?, ?, ?, ?)",
-            (nome, genero, descricao, emoji, instagram, usuario["id"]),
+            "INSERT INTO bandas (nome, genero, descricao, emoji, instagram, email, link_extra, criado_por) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (nome, genero, descricao, emoji, instagram, email, link_extra, usuario["id"]),
         )
         banda_id = cursor.lastrowid
 
@@ -1006,6 +1073,8 @@ def criar_banda():
             "descricao": descricao,
             "emoji": emoji,
             "instagram": instagram,
+            "email": email,
+            "link_extra": link_extra,
         },
     )
 
@@ -1019,14 +1088,17 @@ def editar_banda(banda_id):
     descricao = (dados.get("descricao") or "").strip()
     emoji = (dados.get("emoji") or "").strip() or "🎵"
     instagram = normalizar_instagram(dados.get("instagram"))
+    email = (dados.get("email") or "").strip()
+    link_extra = (dados.get("link_extra") or "").strip()
 
     if not nome or not genero:
         return jsonify(ok=False, erro="Preencha nome e gênero."), 400
 
     with get_db() as conn:
         cursor = conn.execute(
-            "UPDATE bandas SET nome = ?, genero = ?, descricao = ?, emoji = ?, instagram = ? WHERE id = ?",
-            (nome, genero, descricao, emoji, instagram, banda_id),
+            "UPDATE bandas SET nome = ?, genero = ?, descricao = ?, emoji = ?, instagram = ?, "
+            "email = ?, link_extra = ? WHERE id = ?",
+            (nome, genero, descricao, emoji, instagram, email, link_extra, banda_id),
         )
         if cursor.rowcount == 0:
             return jsonify(ok=False, erro="Banda não encontrada."), 404
@@ -1040,6 +1112,8 @@ def editar_banda(banda_id):
             "descricao": descricao,
             "emoji": emoji,
             "instagram": instagram,
+            "email": email,
+            "link_extra": link_extra,
         },
     )
 
@@ -1048,7 +1122,75 @@ def editar_banda(banda_id):
 @requer_admin
 def excluir_banda(banda_id):
     with get_db() as conn:
+        conn.execute("DELETE FROM integrantes_banda WHERE banda_id = ?", (banda_id,))
         conn.execute("DELETE FROM bandas WHERE id = ?", (banda_id,))
+    return jsonify(ok=True)
+
+
+# =====================================================
+# API dos integrantes de cada banda (usado na página própria da banda)
+# (leitura: qualquer usuário logado / escrita: só admin)
+# =====================================================
+
+@app.post("/api/bandas/<int:banda_id>/integrantes")
+@requer_admin
+def criar_integrante(banda_id):
+    dados = request.get_json(silent=True) or {}
+    nome = (dados.get("nome") or "").strip()
+    funcao = (dados.get("funcao") or "").strip()
+    whatsapp = (dados.get("whatsapp") or "").strip()
+    foto_url = (dados.get("foto_url") or "").strip()
+
+    if not nome:
+        return jsonify(ok=False, erro="Informe o nome do integrante."), 400
+
+    with get_db() as conn:
+        banda = conn.execute("SELECT id FROM bandas WHERE id = ?", (banda_id,)).fetchone()
+        if not banda:
+            return jsonify(ok=False, erro="Banda não encontrada."), 404
+        cursor = conn.execute(
+            "INSERT INTO integrantes_banda (banda_id, nome, funcao, whatsapp, foto_url) VALUES (?, ?, ?, ?, ?)",
+            (banda_id, nome, funcao, whatsapp, foto_url),
+        )
+        integrante_id = cursor.lastrowid
+
+    return jsonify(
+        ok=True,
+        integrante={"id": integrante_id, "nome": nome, "funcao": funcao, "whatsapp": whatsapp, "foto_url": foto_url},
+    )
+
+
+@app.put("/api/integrantes/<int:integrante_id>")
+@requer_admin
+def editar_integrante(integrante_id):
+    dados = request.get_json(silent=True) or {}
+    nome = (dados.get("nome") or "").strip()
+    funcao = (dados.get("funcao") or "").strip()
+    whatsapp = (dados.get("whatsapp") or "").strip()
+    foto_url = (dados.get("foto_url") or "").strip()
+
+    if not nome:
+        return jsonify(ok=False, erro="Informe o nome do integrante."), 400
+
+    with get_db() as conn:
+        cursor = conn.execute(
+            "UPDATE integrantes_banda SET nome = ?, funcao = ?, whatsapp = ?, foto_url = ? WHERE id = ?",
+            (nome, funcao, whatsapp, foto_url, integrante_id),
+        )
+        if cursor.rowcount == 0:
+            return jsonify(ok=False, erro="Integrante não encontrado."), 404
+
+    return jsonify(
+        ok=True,
+        integrante={"id": integrante_id, "nome": nome, "funcao": funcao, "whatsapp": whatsapp, "foto_url": foto_url},
+    )
+
+
+@app.delete("/api/integrantes/<int:integrante_id>")
+@requer_admin
+def excluir_integrante(integrante_id):
+    with get_db() as conn:
+        conn.execute("DELETE FROM integrantes_banda WHERE id = ?", (integrante_id,))
     return jsonify(ok=True)
 
 
