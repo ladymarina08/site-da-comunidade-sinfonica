@@ -35,15 +35,20 @@
   <main>
     <section class="page-hero container">
       <h1>Playlists</h1>
-      <p>Ouça o som da comunidade — direto do Spotify.</p>
+      <p>Ouça o som da comunidade.</p>
     </section>
 
     <!--
-      TODO Marina: pra adicionar outra playlist, copie um bloco
+      TODO Marina: pra adicionar outra playlist do Spotify, copie um bloco
       <article class="playlist-card">...</article> por inteiro e troque o
       título e o "src" do iframe (pegue o link no Spotify em "Compartilhar
       → Copiar link da playlist", extraia o código depois de "/playlist/"
       e antes do "?", e monte: https://open.spotify.com/embed/playlist/CÓDIGO
+
+      Pra playlists do YouTube Music (ou qualquer uma que não permita tocar
+      incorporada no site), copie um bloco <a class="playlist-card
+      playlist-card-link">...</a> por inteiro e troque o título e o "href"
+      pelo link da playlist.
     -->
     <section class="playlists-grid">
       <article class="playlist-card">
@@ -59,6 +64,17 @@
           title="Playlist Spotify — Autorais da Comunidade"
         ></iframe>
       </article>
+
+      <a
+        href="https://music.youtube.com/playlist?list=PLWbZ__G6uVsM"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="playlist-card playlist-card-link"
+      >
+        <h2>Comunidade Sinfônica Autorais</h2>
+        <p class="playlist-card-plataforma">▶ YouTube Music</p>
+        <p class="playlist-card-desc">Abrir playlist no YouTube Music</p>
+      </a>
     </section>
   </main>
 
