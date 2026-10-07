@@ -753,12 +753,19 @@ main {
   text-decoration: none;
 }
 
-/* ---------- Recados e anúncios ---------- */
+/* ---------- Recados e Notícias (murais da tela de Início) ---------- */
+
+.inicio-murais {
+  max-width: var(--max-width);
+  margin: 10px auto 40px;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 30px;
+  align-items: start;
+}
 
 .inicio-recados {
-  max-width: 640px;
-  margin: 10px auto 0;
-  padding: 0 20px;
   text-align: center;
 }
 
@@ -767,8 +774,7 @@ main {
 }
 
 .mural-avisos {
-  max-width: 700px;
-  margin: 20px auto 40px;
+  margin: 20px 0 0;
   padding: 36px 26px;
   background: linear-gradient(160deg, #241209, #170b05);
   border: 10px solid var(--black-2);

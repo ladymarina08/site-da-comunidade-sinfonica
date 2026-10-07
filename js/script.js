@@ -721,41 +721,52 @@ async function carregarPerfilBanda() {
   }
 }
 
-// ---------- Recados e anúncios (exibição pública na tela de Início) ----------
+// ---------- Mural (Recados e Notícias, exibição pública na tela de Início) ----------
+// Recados e Notícias usam o mesmo formato (título + data + corpo) e o mesmo
+// visual (mural de avisos) — só mudam o endpoint e o container.
 
-function montarCardRecado(recado) {
+function montarCardMural(item) {
   const artigo = document.createElement('article');
   artigo.className = 'recado-card';
 
   const titulo = document.createElement('h2');
-  titulo.textContent = recado.titulo;
+  titulo.textContent = item.titulo;
 
   const data = document.createElement('p');
   data.className = 'recado-data';
-  data.textContent = formatarDataCadastro(recado.criado_em);
+  data.textContent = formatarDataCadastro(item.criado_em);
 
   const corpo = document.createElement('p');
   corpo.className = 'recado-corpo';
-  corpo.textContent = recado.corpo;
+  corpo.textContent = item.corpo;
 
   artigo.append(titulo, data, corpo);
   return artigo;
 }
 
-async function carregarRecados() {
-  const lista = document.getElementById('recadosLista');
-  const { status, dados } = await chamarApi('/api/recados');
+async function carregarMuralPublico(apiPath, chaveResposta, listaId, textoVazio) {
+  const lista = document.getElementById(listaId);
+  const { status, dados } = await chamarApi(apiPath);
   lista.innerHTML = '';
 
   if (status !== 200 || !dados.ok) {
-    lista.innerHTML = '<p class="empty-state">Não foi possível carregar os recados.</p>';
+    lista.innerHTML = '<p class="empty-state">Não foi possível carregar.</p>';
     return;
   }
-  if (dados.recados.length === 0) {
-    lista.innerHTML = '<p class="empty-state">Nenhum recado publicado ainda.</p>';
+  const itens = dados[chaveResposta];
+  if (itens.length === 0) {
+    lista.innerHTML = `<p class="empty-state">${textoVazio}</p>`;
     return;
   }
-  dados.recados.forEach((recado) => lista.appendChild(montarCardRecado(recado)));
+  itens.forEach((item) => lista.appendChild(montarCardMural(item)));
+}
+
+async function carregarRecados() {
+  await carregarMuralPublico('/api/recados', 'recados', 'recadosLista', 'Nenhum recado publicado ainda.');
+}
+
+async function carregarNoticias() {
+  await carregarMuralPublico('/api/noticias', 'noticias', 'noticiasLista', 'Nenhuma notícia publicada ainda.');
 }
 
 // ---------- Painel de administração (admin.html) ----------
@@ -1274,115 +1285,158 @@ if (integranteForm) {
   });
 }
 
-const recadoForm = document.getElementById('recadoForm');
-const recadoMsg = document.getElementById('recadoMsg');
-const recadosAdminList = document.getElementById('recadosAdminList');
-const recadoSubmitBtn = document.getElementById('recadoSubmitBtn');
-const recadoCancelarEdicao = document.getElementById('recadoCancelarEdicao');
-const recadoFormTitulo = document.getElementById('recadoFormTitulo');
+// Gerenciador genérico de CRUD no Admin pra itens de mural (título + corpo) —
+// usado tanto por Recados quanto por Notícias, que funcionam de forma idêntica.
+function configurarGerenciadorMural(opcoes) {
+  const form = document.getElementById(opcoes.formId);
+  if (!form) return null;
 
-let editandoRecadoId = null;
+  const msg = document.getElementById(opcoes.msgId);
+  const lista = document.getElementById(opcoes.listaId);
+  const submitBtn = document.getElementById(opcoes.submitBtnId);
+  const cancelarEdicao = document.getElementById(opcoes.cancelarEdicaoId);
+  const formTitulo = document.getElementById(opcoes.formTituloId);
 
-function iniciarEdicaoRecado(recado) {
-  editandoRecadoId = recado.id;
-  document.getElementById('recadoTitulo').value = recado.titulo;
-  document.getElementById('recadoCorpo').value = recado.corpo;
+  let editandoId = null;
 
-  recadoSubmitBtn.textContent = 'Salvar alterações';
-  recadoFormTitulo.textContent = 'Editar recado';
-  recadoCancelarEdicao.hidden = false;
-  recadoMsg.classList.remove('show');
-  recadoForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+  function iniciarEdicao(item) {
+    editandoId = item.id;
+    document.getElementById(opcoes.campoTituloId).value = item.titulo;
+    document.getElementById(opcoes.campoCorpoId).value = item.corpo;
 
-function cancelarEdicaoRecado() {
-  editandoRecadoId = null;
-  recadoForm.reset();
-  recadoSubmitBtn.textContent = 'Publicar recado';
-  recadoFormTitulo.textContent = 'Novo recado';
-  recadoCancelarEdicao.hidden = true;
-  recadoMsg.classList.remove('show');
-}
-
-if (recadoCancelarEdicao) {
-  recadoCancelarEdicao.addEventListener('click', (event) => {
-    event.preventDefault();
-    cancelarEdicaoRecado();
-  });
-}
-
-function montarItemAdminRecado(recado) {
-  const item = document.createElement('div');
-  item.className = 'admin-list-item';
-
-  const info = document.createElement('div');
-  info.className = 'info';
-  const tituloForte = document.createElement('strong');
-  tituloForte.textContent = recado.titulo;
-  info.appendChild(tituloForte);
-  info.append(` — ${formatarDataCadastro(recado.criado_em)}`);
-
-  const acoes = document.createElement('div');
-  acoes.className = 'admin-list-acoes';
-
-  const editar = document.createElement('button');
-  editar.type = 'button';
-  editar.className = 'btn btn-outline';
-  editar.textContent = 'Editar';
-  editar.addEventListener('click', () => iniciarEdicaoRecado(recado));
-
-  const excluir = document.createElement('button');
-  excluir.type = 'button';
-  excluir.className = 'btn btn-danger';
-  excluir.textContent = 'Excluir';
-  excluir.addEventListener('click', async () => {
-    if (!confirm(`Excluir o recado "${recado.titulo}"?`)) return;
-    if (editandoRecadoId === recado.id) cancelarEdicaoRecado();
-    await chamarApi(`/api/recados/${recado.id}`, { method: 'DELETE' });
-    carregarRecadosAdmin();
-  });
-
-  acoes.append(editar, excluir);
-  item.append(info, acoes);
-  return item;
-}
-
-async function carregarRecadosAdmin() {
-  const { status, dados } = await chamarApi('/api/recados');
-  recadosAdminList.innerHTML = '';
-
-  if (status !== 200 || !dados.ok || dados.recados.length === 0) {
-    recadosAdminList.innerHTML = '<p class="empty-state">Nenhum recado publicado ainda.</p>';
-    return;
+    submitBtn.textContent = 'Salvar alterações';
+    formTitulo.textContent = opcoes.rotuloEditar;
+    cancelarEdicao.hidden = false;
+    msg.classList.remove('show');
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  dados.recados.forEach((recado) => recadosAdminList.appendChild(montarItemAdminRecado(recado)));
-}
 
-if (recadoForm) {
-  recadoForm.addEventListener('submit', async (event) => {
+  function cancelarEdicaoFn() {
+    editandoId = null;
+    form.reset();
+    submitBtn.textContent = opcoes.rotuloAdicionar;
+    formTitulo.textContent = opcoes.rotuloNovo;
+    cancelarEdicao.hidden = true;
+    msg.classList.remove('show');
+  }
+
+  cancelarEdicao.addEventListener('click', (event) => {
+    event.preventDefault();
+    cancelarEdicaoFn();
+  });
+
+  function montarItem(item) {
+    const div = document.createElement('div');
+    div.className = 'admin-list-item';
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    const tituloForte = document.createElement('strong');
+    tituloForte.textContent = item.titulo;
+    info.appendChild(tituloForte);
+    info.append(` — ${formatarDataCadastro(item.criado_em)}`);
+
+    const acoes = document.createElement('div');
+    acoes.className = 'admin-list-acoes';
+
+    const editar = document.createElement('button');
+    editar.type = 'button';
+    editar.className = 'btn btn-outline';
+    editar.textContent = 'Editar';
+    editar.addEventListener('click', () => iniciarEdicao(item));
+
+    const excluir = document.createElement('button');
+    excluir.type = 'button';
+    excluir.className = 'btn btn-danger';
+    excluir.textContent = 'Excluir';
+    excluir.addEventListener('click', async () => {
+      if (!confirm(`Excluir "${item.titulo}"?`)) return;
+      if (editandoId === item.id) cancelarEdicaoFn();
+      await chamarApi(`${opcoes.apiPath}/${item.id}`, { method: 'DELETE' });
+      carregarLista();
+    });
+
+    acoes.append(editar, excluir);
+    div.append(info, acoes);
+    return div;
+  }
+
+  async function carregarLista() {
+    const { status, dados } = await chamarApi(opcoes.apiPath);
+    lista.innerHTML = '';
+
+    const itens = status === 200 && dados.ok ? dados[opcoes.chaveResposta] : [];
+    if (itens.length === 0) {
+      lista.innerHTML = `<p class="empty-state">${opcoes.textoVazio}</p>`;
+      return;
+    }
+    itens.forEach((item) => lista.appendChild(montarItem(item)));
+  }
+
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const corpo = {
-      titulo: document.getElementById('recadoTitulo').value,
-      corpo: document.getElementById('recadoCorpo').value,
+      titulo: document.getElementById(opcoes.campoTituloId).value,
+      corpo: document.getElementById(opcoes.campoCorpoId).value,
     };
 
-    const editando = editandoRecadoId !== null;
+    const editando = editandoId !== null;
     const { status, dados } = await chamarApi(
-      editando ? `/api/recados/${editandoRecadoId}` : '/api/recados',
+      editando ? `${opcoes.apiPath}/${editandoId}` : opcoes.apiPath,
       { method: editando ? 'PUT' : 'POST', body: JSON.stringify(corpo) }
     );
 
-    recadoMsg.classList.add('show');
+    msg.classList.add('show');
     if (status === 200 && dados.ok) {
-      recadoMsg.textContent = editando ? 'Recado atualizado!' : 'Recado publicado!';
-      cancelarEdicaoRecado();
-      carregarRecadosAdmin();
+      msg.textContent = editando ? opcoes.msgAtualizado : opcoes.msgPublicado;
+      cancelarEdicaoFn();
+      carregarLista();
     } else {
-      recadoMsg.textContent = dados.erro || 'Não foi possível salvar o recado.';
+      msg.textContent = dados.erro || 'Não foi possível salvar.';
     }
   });
+
+  return { carregarLista };
 }
+
+const gerenciadorRecados = configurarGerenciadorMural({
+  apiPath: '/api/recados',
+  chaveResposta: 'recados',
+  formId: 'recadoForm',
+  msgId: 'recadoMsg',
+  listaId: 'recadosAdminList',
+  submitBtnId: 'recadoSubmitBtn',
+  cancelarEdicaoId: 'recadoCancelarEdicao',
+  formTituloId: 'recadoFormTitulo',
+  campoTituloId: 'recadoTitulo',
+  campoCorpoId: 'recadoCorpo',
+  rotuloAdicionar: 'Publicar recado',
+  rotuloNovo: 'Novo recado',
+  rotuloEditar: 'Editar recado',
+  msgAtualizado: 'Recado atualizado!',
+  msgPublicado: 'Recado publicado!',
+  textoVazio: 'Nenhum recado publicado ainda.',
+});
+
+const gerenciadorNoticias = configurarGerenciadorMural({
+  apiPath: '/api/noticias',
+  chaveResposta: 'noticias',
+  formId: 'noticiaForm',
+  msgId: 'noticiaMsg',
+  listaId: 'noticiasAdminList',
+  submitBtnId: 'noticiaSubmitBtn',
+  cancelarEdicaoId: 'noticiaCancelarEdicao',
+  formTituloId: 'noticiaFormTitulo',
+  campoTituloId: 'noticiaTitulo',
+  campoCorpoId: 'noticiaCorpo',
+  rotuloAdicionar: 'Publicar notícia',
+  rotuloNovo: 'Nova notícia',
+  rotuloEditar: 'Editar notícia',
+  msgAtualizado: 'Notícia atualizada!',
+  msgPublicado: 'Notícia publicada!',
+  textoVazio: 'Nenhuma notícia publicada ainda.',
+});
 
 // ---------- Meu Perfil (perfil.html) ----------
 
@@ -1584,11 +1638,13 @@ if (mainNav) {
     if (document.getElementById('bandsGrid')) carregarBandas();
     if (document.getElementById('bandaConteudo')) carregarPerfilBanda();
     if (document.getElementById('recadosLista')) carregarRecados();
+    if (document.getElementById('noticiasLista')) carregarNoticias();
     if (usuariosList) carregarUsuarios();
     if (perguntasChatbotList) carregarPerguntasChatbot();
     if (showsList) carregarShowsAdmin();
     if (bandasList) carregarBandasAdmin();
-    if (recadosAdminList) carregarRecadosAdmin();
+    if (gerenciadorRecados) gerenciadorRecados.carregarLista();
+    if (gerenciadorNoticias) gerenciadorNoticias.carregarLista();
     if (perfilForm) preencherPerfil(usuario);
     if (document.getElementById('lembretesList')) carregarLembretes();
   });

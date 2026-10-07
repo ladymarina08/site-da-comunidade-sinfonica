@@ -74,6 +74,25 @@
     </section>
 
     <section class="admin-section">
+      <h2 id="noticiaFormTitulo">Nova notícia</h2>
+      <form class="admin-form" id="noticiaForm">
+        <label for="noticiaTitulo">Título</label>
+        <input type="text" id="noticiaTitulo" required />
+        <label for="noticiaCorpo">Conteúdo</label>
+        <textarea id="noticiaCorpo" rows="6" placeholder="Escreva a notícia..." required></textarea>
+        <div class="admin-form-acoes">
+          <button type="submit" class="btn btn-primary" id="noticiaSubmitBtn">Publicar notícia</button>
+          <a href="#" class="link-muted" id="noticiaCancelarEdicao" hidden>Cancelar edição</a>
+        </div>
+        <p class="form-message" id="noticiaMsg" role="status"></p>
+      </form>
+
+      <div class="admin-list" id="noticiasAdminList">
+        <p class="empty-state">Carregando notícias...</p>
+      </div>
+    </section>
+
+    <section class="admin-section">
       <h2 id="showFormTitulo">Novo show</h2>
       <form class="admin-form" id="showForm">
         <div class="form-grid">
