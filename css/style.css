@@ -1063,8 +1063,9 @@ main {
 
 .admin-list-acoes {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  flex-shrink: 0;
+  max-width: 100%;
 }
 
 .admin-list-acoes .btn {

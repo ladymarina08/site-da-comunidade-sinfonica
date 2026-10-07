@@ -872,6 +872,38 @@ if (showCancelarEdicao) {
   });
 }
 
+function gerarLinkWhatsapp(texto) {
+  return `https://wa.me/?text=${encodeURIComponent(texto)}`;
+}
+
+function gerarTextoAvisoShow(show) {
+  const horarioTexto = show.horario ? ` às ${show.horario}` : '';
+  const linkAgenda = `${window.location.origin}/agenda.html`;
+  return (
+    `🎤 Novo show na agenda da Comunidade Sinfônica!\n\n` +
+    `${show.banda}\n📅 ${formatarDataBR(show.data)}${horarioTexto}\n📍 ${show.local}, ${show.cidade}\n\n` +
+    `Confira e ative o lembrete no site: ${linkAgenda}`
+  );
+}
+
+function gerarTextoAvisoBanda(banda) {
+  const nomeBanda = banda.nome.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const instagramTexto = banda.instagram
+    ? `\nSiga no Instagram: https://instagram.com/${banda.instagram.replace(/^@/, '')}`
+    : '';
+  return `🦇 A banda ${nomeBanda} agora faz parte da Comunidade Sinfônica!${instagramTexto}`;
+}
+
+function montarBotaoWhatsapp(texto) {
+  const link = document.createElement('a');
+  link.className = 'btn btn-outline';
+  link.textContent = '💬 WhatsApp';
+  link.href = gerarLinkWhatsapp(texto);
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  return link;
+}
+
 function montarItemAdminShow(show) {
   const item = document.createElement('div');
   item.className = 'admin-list-item';
@@ -919,7 +951,9 @@ function montarItemAdminShow(show) {
     carregarShowsAdmin();
   });
 
-  acoes.append(editar, avisar, excluir);
+  const whatsapp = montarBotaoWhatsapp(gerarTextoAvisoShow(show));
+
+  acoes.append(editar, avisar, whatsapp, excluir);
   item.append(info, acoes);
   return item;
 }
@@ -1039,6 +1073,8 @@ function montarItemAdminBanda(banda) {
     alert(status === 200 && dados.ok ? `Aviso enviado pra ${dados.enviados} de ${dados.total} usuário(s).` : 'Não foi possível enviar o aviso.');
   });
 
+  const whatsapp = montarBotaoWhatsapp(gerarTextoAvisoBanda(banda));
+
   const excluir = document.createElement('button');
   excluir.type = 'button';
   excluir.className = 'btn btn-danger';
@@ -1050,7 +1086,7 @@ function montarItemAdminBanda(banda) {
     carregarBandasAdmin();
   });
 
-  acoes.append(editar, avisar, excluir);
+  acoes.append(editar, avisar, whatsapp, excluir);
   item.append(info, acoes);
   return item;
 }
